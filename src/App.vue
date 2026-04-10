@@ -1,10 +1,16 @@
 <template>
   <router-view />
+  <Toaster position="top-right" richColors />
 </template>
 
 <script>
+import { Toaster } from 'vue-sonner'
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    Toaster
+  }
 }
 </script>
 

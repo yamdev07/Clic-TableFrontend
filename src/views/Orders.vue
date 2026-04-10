@@ -46,6 +46,14 @@
           </svg>
           <span>Menu</span>
         </router-link>
+        <router-link v-if="authStore.isKitchen" to="/kitchen" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M6 2v6a3 3 0 0 0 6 0V2M9 2v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M18 2c0 0 0 6-3 6s-3-6-3-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M3 14h18v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <span>Cuisine</span>
+        </router-link>
       </nav>
 
       <!-- Sidebar stats -->
@@ -59,6 +67,22 @@
           <span class="skpi-val">{{ formatMoney(todayRevenue) }}</span>
           <span class="skpi-lab">chiffre d'affaires</span>
         </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="user-avatar">{{ initials }}</div>
+          <div class="user-meta">
+            <span class="user-name">{{ authStore.userName }}</span>
+            <span class="user-role">{{ authStore.userRole }}</span>
+          </div>
+        </div>
+        <button @click="logout" class="logout-btn" title="Déconnexion">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M17 16l4-4m0 0l-4-4m4 4H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M3 12V7a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
     </aside>
 
@@ -279,9 +303,9 @@
               >
                 <div class="item-info">
                   <span class="item-qty">×{{ item.quantity }}</span>
-                  <span class="item-name">{{ item.menu_item?.name || item.name }}</span>
+                  <span class="item-name">{{ item.menu_item?.name || item.item_name || '—' }}</span>
                 </div>
-                <span class="item-price">{{ formatMoney((item.price || 0) * (item.quantity || 1)) }}</span>
+                <span class="item-price">{{ formatMoney((item.unit_price || 0) * (item.quantity || 1)) }}</span>
               </div>
               <div v-if="!selectedOrder.items || selectedOrder.items.length === 0" class="items-empty">
                 Aucun article
@@ -373,9 +397,11 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const orders = ref([])
 const availableTables = ref([])
@@ -389,6 +415,15 @@ const sortKey = ref('created_at')
 const sortDir = ref(-1)
 const lastRefresh = ref('')
 let interval = null
+
+const initials = computed(() => {
+  return (authStore.userName || 'U')
+    .split(' ')
+    .map(w => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+})
 
 const statusFilters = [
   { value: 'all',         label: 'Toutes' },
@@ -477,6 +512,7 @@ const updateStatus = async (order, newStatus) => {
     await api.patch(`/orders/${order.id}/status`, { status: newStatus })
     order.status = newStatus
     if (selectedOrder.value?.id === order.id) selectedOrder.value.status = newStatus
+    await loadOrders()
   } catch (e) { console.error('Erreur statut', e) }
 }
 
@@ -519,6 +555,11 @@ const getStatusLabel = (s) => ({
   open: 'Ouverte', in_progress: 'En préparation', ready: 'Prête',
   served: 'Servie', paid: 'Payée', cancelled: 'Annulée',
 }[s] || s)
+
+const logout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 
 onMounted(() => {
   loadOrders()
@@ -573,10 +614,11 @@ onBeforeUnmount(() => clearInterval(interval))
   transition: all 0.15s;
 }
 .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
-.nav-item.active, .router-link-active.nav-item { background: rgba(124,58,237,0.18); color: #c4b5fd; }
+.nav-item.active { background: rgba(124,58,237,0.18); color: #c4b5fd; }
 .nav-item span:first-of-type { flex: 1; }
 .nav-badge { font-size: 11px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); padding: 2px 7px; border-radius: 20px; font-weight: 500; }
 .nav-badge.accent { background: rgba(124,58,237,0.3); color: #c4b5fd; }
+
 .sidebar-stats {
   padding: 16px 20px;
   border-top: 1px solid rgba(255,255,255,0.06);
@@ -590,6 +632,68 @@ onBeforeUnmount(() => clearInterval(interval))
 }
 .skpi-val { font-size: 16px; font-weight: 600; color: white; letter-spacing: -0.02em; }
 .skpi-lab { font-size: 11px; color: rgba(255,255,255,0.3); }
+
+.sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(124,58,237,0.3);
+  color: #c4b5fd;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.user-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-role {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  text-transform: capitalize;
+}
+.logout-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.logout-btn:hover {
+  background: rgba(239,68,68,0.15);
+  color: #fca5a5;
+}
 
 /* ── Main ── */
 .main {

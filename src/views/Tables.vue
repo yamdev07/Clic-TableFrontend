@@ -1,7 +1,7 @@
 <template>
   <div class="tables-root">
 
-    <!-- ── Sidebar (identique au Dashboard) ── -->
+    <!-- ── Sidebar ── -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="brand-icon">
@@ -29,11 +29,13 @@
             <path d="M3 6h18M3 18h18M6 6v12M18 6v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
           <span>Tables</span>
+          <span class="nav-badge">{{ occupiedCount }}/{{ tables.length }}</span>
         </router-link>
         <router-link to="/orders" class="nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.5"/>
             <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
           <span>Commandes</span>
         </router-link>
@@ -43,6 +45,14 @@
             <path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
           <span>Menu</span>
+        </router-link>
+        <router-link v-if="authStore.isKitchen" to="/kitchen" class="nav-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M6 2v6a3 3 0 0 0 6 0V2M9 2v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M18 2c0 0 0 6-3 6s-3-6-3-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M3 14h18v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <span>Cuisine</span>
         </router-link>
       </nav>
 
@@ -208,6 +218,7 @@
 
 <script>
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'TablesView',
@@ -225,6 +236,9 @@ export default {
     occupiedCount() {
       return this.tables.filter(t => t.status === 'occupied').length
     },
+    authStore() {
+      return useAuthStore()
+    }
   },
   mounted() {
     this.loadTables()
@@ -323,7 +337,7 @@ export default {
   color: #0f0f12;
 }
 
-/* ── Sidebar (same tokens as Dashboard) ── */
+/* ── Sidebar ── */
 .sidebar {
   width: 232px;
   flex-shrink: 0;
@@ -335,6 +349,7 @@ export default {
   height: 100vh;
   overflow-y: auto;
 }
+
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -346,7 +361,9 @@ export default {
   color: white;
   letter-spacing: -0.02em;
 }
+
 .sidebar-brand em { font-style: normal; color: #a78bfa; }
+
 .brand-icon {
   width: 30px; height: 30px;
   background: rgba(255,255,255,0.08);
@@ -355,6 +372,7 @@ export default {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
+
 .sidebar-nav {
   flex: 1;
   padding: 16px 12px;
@@ -362,12 +380,14 @@ export default {
   flex-direction: column;
   gap: 2px;
 }
+
 .nav-section-label {
   font-size: 10px; font-weight: 500;
   color: rgba(255,255,255,0.25);
   text-transform: uppercase; letter-spacing: 0.08em;
   padding: 8px 8px 6px;
 }
+
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 10px;
@@ -377,27 +397,30 @@ export default {
   color: rgba(255,255,255,0.5);
   transition: all 0.15s;
 }
+
 .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
-.nav-item.active, .router-link-active.nav-item {
-  background: rgba(124,58,237,0.18);
-  color: #c4b5fd;
-}
+.nav-item.active { background: rgba(124,58,237,0.18); color: #c4b5fd; }
+.nav-item span:first-of-type { flex: 1; }
+.nav-badge { font-size: 11px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); padding: 2px 7px; border-radius: 20px; font-weight: 500; }
 
 .sidebar-footer {
   padding: 16px 20px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
+
 .legend-title {
   font-size: 10px; font-weight: 500;
   color: rgba(255,255,255,0.25);
   text-transform: uppercase; letter-spacing: 0.08em;
   margin: 0 0 10px;
 }
+
 .legend-items { display: flex; flex-direction: column; gap: 7px; }
 .legend-row {
   display: flex; align-items: center; gap: 8px;
   font-size: 12px; color: rgba(255,255,255,0.45);
 }
+
 .ldot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
@@ -422,21 +445,25 @@ export default {
   justify-content: space-between;
   align-items: center;
 }
+
 .page-title {
   font-size: 22px; font-weight: 600;
   color: #0f0f12; letter-spacing: -0.03em;
   margin: 0 0 4px;
 }
+
 .page-sub {
   font-size: 13px; color: #9b9bab; margin: 0;
   display: flex; align-items: center; gap: 6px;
 }
+
 .occ-pill {
   display: inline-block;
   background: #fee2e2; color: #991b1b;
   font-size: 11px; font-weight: 500;
   padding: 2px 8px; border-radius: 99px;
 }
+
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 
 .btn-ghost {
@@ -450,6 +477,7 @@ export default {
   font-family: 'DM Sans', sans-serif;
   transition: all 0.15s;
 }
+
 .btn-ghost:hover { border-color: #c4b5fd; color: #7c3aed; background: #f5f3ff; }
 
 .btn-drag {
@@ -463,12 +491,14 @@ export default {
   font-family: 'DM Sans', sans-serif;
   transition: all 0.15s;
 }
+
 .btn-drag:hover { background: #2a2a35; }
 .btn-drag.active {
   background: #7c3aed;
   border-color: #7c3aed;
   animation: pulse-btn 1.8s ease-in-out infinite;
 }
+
 @keyframes pulse-btn {
   0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.4); }
   50% { box-shadow: 0 0 0 6px rgba(124,58,237,0); }
@@ -481,13 +511,13 @@ export default {
   overflow: hidden;
   border: 1px solid #e4e4ec;
   background: #1c1917;
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
   background-size: 28px 28px;
   box-shadow: inset 0 0 0 3px rgba(255,255,255,0.03);
   min-height: 580px;
   position: relative;
 }
+
 .floor-plan {
   position: relative;
   width: 100%;
@@ -504,6 +534,7 @@ export default {
   user-select: none;
   transition: filter 0.15s;
 }
+
 .table-item.drag-mode { cursor: grab; }
 .table-item.dragging  { cursor: grabbing; z-index: 100; filter: brightness(1.1); }
 .table-item:not(.drag-mode):hover .table-surface { filter: brightness(1.08); }
@@ -524,20 +555,24 @@ export default {
   z-index: 2;
   transition: all 0.15s;
 }
+
 .table-surface.round {
   width: 72px; height: 72px;
   border-radius: 50%;
 }
+
 .table-surface.rect {
   width: 90px; height: 54px;
   border-radius: 10px;
 }
+
 .table-num {
   font-size: 17px; font-weight: 600;
   color: rgba(255,255,255,0.9);
   letter-spacing: -0.02em;
   line-height: 1;
 }
+
 .table-order-tag {
   font-size: 9px; font-weight: 500;
   color: rgba(255,255,255,0.35);
@@ -553,6 +588,7 @@ export default {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 5px;
 }
+
 .c-top    { top: 4px;    left: 50%; transform: translateX(-50%); }
 .c-bottom { bottom: 4px; left: 50%; transform: translateX(-50%); }
 .c-left   { left: 4px;   top: 50%;  transform: translateY(-50%); }
@@ -571,6 +607,7 @@ export default {
   border: 2px solid #1c1917;
   z-index: 5;
 }
+
 .status-dot.free     { background: #34d399; }
 .status-dot.occupied { background: #f87171; }
 .status-dot.reserved { background: #fbbf24; }
@@ -593,6 +630,7 @@ export default {
   z-index: 1000;
   backdrop-filter: blur(4px);
 }
+
 .modal-card {
   background: white;
   border-radius: 16px;
@@ -600,26 +638,31 @@ export default {
   width: 90%; max-width: 380px;
   box-shadow: 0 24px 48px rgba(0,0,0,0.2);
 }
+
 .modal-header {
   display: flex; justify-content: space-between; align-items: flex-start;
   margin-bottom: 20px;
 }
+
 .modal-eyebrow {
   font-size: 11px; font-weight: 500;
   text-transform: uppercase; letter-spacing: 0.06em;
   color: #9b9bab; margin: 0 0 4px;
 }
+
 .modal-title {
   font-size: 22px; font-weight: 600;
   color: #0f0f12; letter-spacing: -0.03em;
   margin: 0;
 }
+
 .modal-close {
   background: none; border: none; cursor: pointer;
   color: #9b9bab; padding: 4px;
   border-radius: 6px; display: flex; align-items: center;
   transition: all 0.15s;
 }
+
 .modal-close:hover { background: #f0f0f5; color: #3f3f4e; }
 
 .modal-info-grid {
@@ -628,6 +671,7 @@ export default {
   gap: 12px;
   margin-bottom: 24px;
 }
+
 .info-cell {
   display: flex; flex-direction: column; gap: 5px;
   background: #fafafc;
@@ -635,15 +679,19 @@ export default {
   border-radius: 10px;
   padding: 12px 14px;
 }
+
 .info-cell.full { grid-column: 1 / -1; }
+
 .info-label {
   font-size: 10px; font-weight: 500;
   text-transform: uppercase; letter-spacing: 0.06em;
   color: #9b9bab;
 }
+
 .info-val {
   font-size: 14px; font-weight: 500; color: #0f0f12;
 }
+
 .info-val.mono { font-family: 'DM Sans', monospace; }
 
 .status-pill {
@@ -652,6 +700,7 @@ export default {
   font-size: 12px; font-weight: 500;
   align-self: flex-start;
 }
+
 .status-pill.free     { background: #dcfce7; color: #166534; }
 .status-pill.occupied { background: #fee2e2; color: #991b1b; }
 .status-pill.reserved { background: #fef3c7; color: #92400e; }
@@ -660,6 +709,7 @@ export default {
 .modal-actions {
   display: flex; flex-direction: column; gap: 8px;
 }
+
 .action-btn {
   width: 100%; padding: 11px;
   border: none; border-radius: 9px;
@@ -669,6 +719,7 @@ export default {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: all 0.15s;
 }
+
 .action-btn.primary { background: #0f0f12; color: white; }
 .action-btn.primary:hover { background: #2a2a35; }
 .action-btn.secondary { background: #ede9fe; color: #6d28d9; }
