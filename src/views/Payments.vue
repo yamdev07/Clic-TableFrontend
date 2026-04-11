@@ -1,179 +1,100 @@
 <template>
-  <div class="dash">
-
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M3 6h18M3 12h18M3 18h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="20" cy="18" r="3" fill="#a78bfa"/>
-          </svg>
-        </div>
-        <span>Clic<em>&</em>Table</span>
+  <div class="payments-layout">
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">💰 Paiements</h1>
+        <p class="page-sub">Gestion des encaissements</p>
       </div>
-
-      <nav class="sidebar-nav">
-        <span class="nav-section-label">Espace de travail</span>
-        <router-link to="/" class="nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+      <div class="topbar-actions">
+        <button class="btn-ghost" @click="loadData">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span>Tableau de bord</span>
-        </router-link>
-        <router-link to="/tables" class="nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 6h18M3 18h18M6 6v12M18 6v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span>Tables</span>
-        </router-link>
-        <router-link to="/orders" class="nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span>Commandes</span>
-        </router-link>
-        <router-link to="/menu" class="nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span>Menu</span>
-        </router-link>
-        <router-link v-if="authStore.isKitchen" to="/kitchen" class="nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M6 2v6a3 3 0 0 0 6 0V2M9 2v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M18 2c0 0 0 6-3 6s-3-6-3-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M3 14h18v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-          <span>Cuisine</span>
-        </router-link>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="user-chip">
-          <div class="user-avatar">{{ initials }}</div>
-          <div class="user-meta">
-            <span class="user-name">{{ authStore.userName }}</span>
-            <span class="user-role">{{ authStore.userRole }}</span>
-          </div>
-        </div>
-        <button @click="logout" class="logout-btn" title="Déconnexion">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M17 16l4-4m0 0l-4-4m4 4H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M3 12V7a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+          Actualiser
         </button>
       </div>
-    </aside>
+    </div>
 
-    <!-- ── Main content ── -->
-    <main class="main">
-      <div class="payments-layout">
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">💰 Paiements</h1>
-            <p class="page-sub">Gestion des encaissements</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn-ghost" @click="loadData">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              Actualiser
-            </button>
-          </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">💰</div>
-            <div class="stat-info">
-              <h3>CA Total</h3>
-              <p class="stat-number">{{ formatMoney(totalRevenue) }}</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🟢</div>
-            <div class="stat-info">
-              <h3>Payé</h3>
-              <p class="stat-number">{{ formatMoney(paidAmount) }}</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🔴</div>
-            <div class="stat-info">
-              <h3>Impayé</h3>
-              <p class="stat-number">{{ formatMoney(dueAmount) }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Orders list -->
-        <div class="orders-section">
-          <div class="section-header">
-            <h2 class="section-title">Commandes à encaisser</h2>
-            <div class="filter-chips">
-              <button
-                v-for="filter in filters"
-                :key="filter.value"
-                class="filter-chip"
-                :class="{ active: activeFilter === filter.value }"
-                @click="activeFilter = filter.value"
-              >
-                {{ filter.label }}
-              </button>
-            </div>
-          </div>
-
-          <div class="orders-grid">
-            <div
-              v-for="order in filteredOrders"
-              :key="order.id"
-              class="order-card"
-              @click="openPaymentModal(order)"
-            >
-              <div class="order-card-header">
-                <span class="order-number">#{{ order.order_number }}</span>
-                <span class="order-status" :class="getPaymentStatus(order).class">
-                  {{ getPaymentStatus(order).label }}
-                </span>
-              </div>
-              <div class="order-card-body">
-                <div class="order-table">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 6h18M3 18h18M6 6v12M18 6v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                  Table {{ order.table?.number }}
-                </div>
-                <div class="order-total">{{ formatMoney(order.total) }}</div>
-                <div class="order-paid">
-                  Payé: {{ formatMoney(order.paid_amount || 0) }}
-                </div>
-                <div class="order-due" :class="{ negative: (order.due_amount || 0) > 0 }">
-                  Reste: {{ formatMoney(order.due_amount || 0) }}
-                </div>
-              </div>
-              <div class="order-card-footer">
-                <button class="pay-btn">
-                  💰 Encaisser
-                </button>
-              </div>
-            </div>
-            <div v-if="filteredOrders.length === 0" class="empty-state">
-              Aucune commande à afficher
-            </div>
-          </div>
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <h3>CA Total</h3>
+          <p class="stat-number">{{ formatMoney(totalRevenue) }}</p>
         </div>
       </div>
-    </main>
+      <div class="stat-card">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-info">
+          <h3>Payé</h3>
+          <p class="stat-number">{{ formatMoney(paidAmount) }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔴</div>
+        <div class="stat-info">
+          <h3>Impayé</h3>
+          <p class="stat-number">{{ formatMoney(dueAmount) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders list -->
+    <div class="orders-section">
+      <div class="section-header">
+        <h2 class="section-title">Commandes à encaisser</h2>
+        <div class="filter-chips">
+          <button
+            v-for="filter in filters"
+            :key="filter.value"
+            class="filter-chip"
+            :class="{ active: activeFilter === filter.value }"
+            @click="activeFilter = filter.value"
+          >
+            {{ filter.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="orders-grid">
+        <div
+          v-for="order in filteredOrders"
+          :key="order.id"
+          class="order-card"
+          @click="openPaymentModal(order)"
+        >
+          <div class="order-card-header">
+            <span class="order-number">#{{ order.order_number }}</span>
+            <span class="order-status" :class="getPaymentStatus(order).class">
+              {{ getPaymentStatus(order).label }}
+            </span>
+          </div>
+          <div class="order-card-body">
+            <div class="order-table">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d="M3 6h18M3 18h18M6 6v12M18 6v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Table {{ order.table?.number }}
+            </div>
+            <div class="order-total">{{ formatMoney(order.total) }}</div>
+            <div class="order-paid">
+              Payé: {{ formatMoney(order.paid_amount || 0) }}
+            </div>
+            <div class="order-due" :class="{ negative: (order.due_amount || 0) > 0 }">
+              Reste: {{ formatMoney(order.due_amount || 0) }}
+            </div>
+          </div>
+          <div class="order-card-footer">
+            <button class="pay-btn">💰 Encaisser</button>
+          </div>
+        </div>
+        <div v-if="filteredOrders.length === 0" class="empty-state">
+          Aucune commande à afficher
+        </div>
+      </div>
+    </div>
 
     <!-- ── Payment Modal ── -->
     <Transition name="modal">
@@ -267,6 +188,77 @@
       </div>
     </Transition>
 
+    <!-- ── Invoice Modal ── -->
+    <Transition name="modal">
+      <div v-if="showInvoiceModal" class="modal-overlay" @click="showInvoiceModal = false">
+        <div class="modal-card invoice-modal" @click.stop>
+          <div class="modal-header">
+            <div>
+              <p class="modal-eyebrow">Facture</p>
+              <h2 class="modal-title">#{{ invoiceData?.order_number }}</h2>
+            </div>
+            <button class="modal-close" @click="showInvoiceModal = false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="invoice-body" ref="invoiceContent">
+            <div class="restaurant-header">
+              <h3>Clic&Table Restaurant</h3>
+              <p>Dakar, Sénégal</p>
+              <p>Tel: +221 78 123 45 67</p>
+            </div>
+
+            <div class="invoice-details">
+              <p><strong>N° Commande:</strong> {{ invoiceData?.order_number }}</p>
+              <p><strong>Table:</strong> Table {{ invoiceData?.table?.number }}</p>
+              <p><strong>Date:</strong> {{ formatDate(invoiceData?.created_at) }}</p>
+              <p><strong>Serveur:</strong> {{ invoiceData?.user?.name }}</p>
+            </div>
+
+            <table class="invoice-items">
+              <thead>
+                <tr>
+                  <th>Article</th>
+                  <th>Qté</th>
+                  <th>Prix unitaire</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in invoiceData?.items" :key="item.id">
+                  <td>{{ item.item_name }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ formatMoney(item.unit_price) }}</td>
+                  <td>{{ formatMoney(item.total_price) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="invoice-totals">
+              <p>Sous-total: {{ formatMoney(invoiceData?.subtotal) }}</p>
+              <p>TVA 18%: {{ formatMoney(invoiceData?.tax) }}</p>
+              <p>Service 5%: {{ formatMoney(invoiceData?.service_charge) }}</p>
+              <p class="total"><strong>TOTAL: {{ formatMoney(invoiceData?.total) }}</strong></p>
+              <p class="paid">Payé: {{ formatMoney(invoiceData?.paid_amount) }}</p>
+            </div>
+
+            <div class="invoice-footer">
+              <p>Merci de votre visite !</p>
+              <p>Règlement par espèces/carte/mobile money accepté</p>
+            </div>
+          </div>
+
+          <div class="modal-footer invoice-actions">
+            <button class="action-btn print" @click="printInvoice">🖨️ Imprimer</button>
+            <button class="action-btn download" @click="downloadInvoice">📥 Télécharger PDF</button>
+            <button class="action-btn ghost" @click="showInvoiceModal = false">Fermer</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -285,6 +277,8 @@ const selectedOrder = ref(null)
 const paymentMethod = ref('cash')
 const paymentAmount = ref(0)
 const paymentReference = ref('')
+const showInvoiceModal = ref(false)
+const invoiceData = ref(null)
 
 const filters = [
   { value: 'all', label: 'Toutes' },
@@ -298,15 +292,6 @@ const paymentMethods = [
   { value: 'wave', label: 'Wave', icon: '📱' },
   { value: 'orange_money', label: 'Orange Money', icon: '📱' },
 ]
-
-const initials = computed(() => {
-  return (authStore.userName || 'U')
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-})
 
 const totalRevenue = computed(() =>
   orders.value.reduce((sum, o) => sum + (o.total || 0), 0)
@@ -369,9 +354,59 @@ const processPayment = async () => {
 
     await loadData()
     closeModal()
+
+    const orderResponse = await api.get(`/orders/${selectedOrder.value.id}`)
+    invoiceData.value = orderResponse.data
+    showInvoiceModal.value = true
+
   } catch (error) {
     console.error('Erreur paiement', error)
     alert('Erreur lors du paiement')
+  }
+}
+
+const printInvoice = () => {
+  const printContent = document.querySelector('.invoice-body').innerHTML
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Facture ${invoiceData.value?.order_number}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          .restaurant-header { text-align: center; margin-bottom: 20px; }
+          .invoice-details { margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .invoice-totals { text-align: right; margin-top: 20px; }
+          .total { font-size: 16px; font-weight: bold; }
+          .invoice-footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>${printContent}</body>
+    </html>
+  `)
+  printWindow.print()
+  printWindow.close()
+}
+
+const downloadInvoice = async () => {
+  try {
+    const response = await api.get(`/orders/${invoiceData.value?.id}/invoice`, {
+      responseType: 'blob'
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `facture-${invoiceData.value?.order_number}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Erreur téléchargement facture', error)
+    alert('Erreur lors du téléchargement de la facture')
   }
 }
 
@@ -381,6 +416,14 @@ const formatMoney = (amount) => {
     currency: 'XOF',
     minimumFractionDigits: 0,
   }).format(amount || 0)
+}
+
+const formatDate = (date) => {
+  if (!date) return ''
+  return new Date(date).toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
 }
 
 const logout = () => {
@@ -397,177 +440,12 @@ onMounted(() => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
 
-.dash {
-  display: flex;
+.payments-layout {
   min-height: 100vh;
   background: #f4f4f6;
   font-family: 'DM Sans', sans-serif;
   color: #0f0f12;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 232px;
-  flex-shrink: 0;
-  background: #0f0f12;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 24px 20px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  letter-spacing: -0.02em;
-}
-
-.sidebar-brand em {
-  font-style: normal;
-  color: #a78bfa;
-}
-
-.brand-icon {
-  width: 30px;
-  height: 30px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 7px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.nav-section-label {
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.25);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 8px 8px 6px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 400;
-  color: rgba(255,255,255,0.5);
-  transition: all 0.15s;
-}
-
-.nav-item:hover {
-  background: rgba(255,255,255,0.07);
-  color: rgba(255,255,255,0.9);
-}
-
-.nav-item.active {
-  background: rgba(124,58,237,0.18);
-  color: #c4b5fd;
-}
-
-.nav-item span:first-of-type {
-  flex: 1;
-}
-
-.sidebar-footer {
-  padding: 16px 12px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.user-chip {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(124,58,237,0.3);
-  color: #c4b5fd;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.user-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.85);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-role {
-  font-size: 11px;
-  color: rgba(255,255,255,0.3);
-  text-transform: capitalize;
-}
-
-.logout-btn {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.3);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 6px;
-  border-radius: 6px;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.logout-btn:hover {
-  background: rgba(239,68,68,0.15);
-  color: #fca5a5;
-}
-
-/* Main */
-.main {
-  flex: 1;
-  min-width: 0;
   padding: 32px 36px;
-}
-
-.payments-layout {
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -614,7 +492,6 @@ onMounted(() => {
   background: #f5f3ff;
 }
 
-/* Stats */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -632,9 +509,7 @@ onMounted(() => {
   gap: 16px;
 }
 
-.stat-icon {
-  font-size: 40px;
-}
+.stat-icon { font-size: 40px; }
 
 .stat-info h3 {
   font-size: 12px;
@@ -652,7 +527,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* Orders section */
 .orders-section {
   background: white;
   border-radius: 12px;
@@ -736,25 +610,11 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.order-status.paid {
-  background: #dcfce7;
-  color: #166534;
-}
+.order-status.paid { background: #dcfce7; color: #166534; }
+.order-status.unpaid { background: #fee2e2; color: #991b1b; }
+.order-status.partial { background: #fef9c3; color: #854d0e; }
 
-.order-status.unpaid {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.order-status.partial {
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-.order-card-body {
-  margin-bottom: 16px;
-}
-
+.order-card-body { margin-bottom: 16px; }
 .order-table {
   font-size: 12px;
   color: #9b9bab;
@@ -763,27 +623,15 @@ onMounted(() => {
   gap: 4px;
   margin-bottom: 8px;
 }
-
 .order-total {
   font-size: 18px;
   font-weight: 600;
   color: #0f0f12;
   margin-bottom: 4px;
 }
-
-.order-paid {
-  font-size: 12px;
-  color: #48bb78;
-}
-
-.order-due {
-  font-size: 12px;
-  color: #f56565;
-}
-
-.order-due.negative {
-  color: #48bb78;
-}
+.order-paid { font-size: 12px; color: #48bb78; }
+.order-due { font-size: 12px; color: #f56565; }
+.order-due.negative { color: #48bb78; }
 
 .pay-btn {
   width: 100%;
@@ -796,10 +644,7 @@ onMounted(() => {
   font-weight: 500;
   transition: background 0.15s;
 }
-
-.pay-btn:hover {
-  background: #2a2a35;
-}
+.pay-btn:hover { background: #2a2a35; }
 
 .empty-state {
   text-align: center;
@@ -807,7 +652,6 @@ onMounted(() => {
   color: #c5c5d0;
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -823,7 +667,7 @@ onMounted(() => {
   background: white;
   border-radius: 16px;
   width: 90%;
-  max-width: 500px;
+  max-width: 550px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 24px 48px rgba(0,0,0,0.2);
@@ -863,15 +707,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
 }
+.modal-close:hover { background: #f0f0f5; color: #3f3f4e; }
 
-.modal-close:hover {
-  background: #f0f0f5;
-  color: #3f3f4e;
-}
-
-.modal-body {
-  padding: 20px 24px;
-}
+.modal-body { padding: 20px 24px; }
 
 .order-summary {
   background: #fafafc;
@@ -895,15 +733,9 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.due-highlight {
-  color: #f56565;
-  font-size: 16px;
-}
+.due-highlight { color: #f56565; font-size: 16px; }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
+.form-group { margin-bottom: 20px; }
 .form-group label {
   display: block;
   font-size: 12px;
@@ -929,12 +761,7 @@ onMounted(() => {
   font-size: 13px;
   transition: all 0.15s;
 }
-
-.method-btn.active {
-  background: #0f0f12;
-  border-color: #0f0f12;
-  color: white;
-}
+.method-btn.active { background: #0f0f12; border-color: #0f0f12; color: white; }
 
 .amount-input {
   width: 100%;
@@ -982,38 +809,74 @@ onMounted(() => {
   border: 1px solid #e4e4ec;
   color: #6b6b7b;
 }
-
-.action-btn.ghost:hover {
-  background: #f4f4f6;
-}
+.action-btn.ghost:hover { background: #f4f4f6; }
 
 .action-btn.primary {
   background: #0f0f12;
   color: white;
   border: none;
 }
+.action-btn.primary:hover:not(:disabled) { background: #2a2a35; }
+.action-btn.primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.action-btn.primary:hover:not(:disabled) {
-  background: #2a2a35;
+.action-btn.print { background: #4299e1; color: white; border: none; }
+.action-btn.print:hover { background: #3182ce; }
+
+.action-btn.download { background: #48bb78; color: white; border: none; }
+.action-btn.download:hover { background: #38a169; }
+
+.invoice-modal { max-width: 600px; }
+.invoice-body { padding: 24px; }
+
+.restaurant-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e4e4ec;
+}
+.restaurant-header h3 { color: #7c3aed; margin-bottom: 8px; }
+.restaurant-header p { margin: 4px 0; color: #6b6b7b; font-size: 12px; }
+
+.invoice-details {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #fafafc;
+  border-radius: 8px;
+}
+.invoice-details p { margin: 6px 0; font-size: 13px; }
+
+.invoice-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+.invoice-items th, .invoice-items td {
+  border: 1px solid #e4e4ec;
+  padding: 8px;
+  text-align: left;
+  font-size: 13px;
 }
 
-.action-btn.primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.invoice-totals { text-align: right; margin-top: 20px; }
+.invoice-totals p { margin: 6px 0; }
+.invoice-totals .total { font-size: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e4e4ec; }
+.invoice-totals .paid { color: #10b981; }
+
+.invoice-footer {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 16px;
+  border-top: 1px solid #e4e4ec;
+  font-size: 12px;
+  color: #9b9bab;
 }
 
-/* Modal transition */
-.modal-enter-active, .modal-leave-active {
-  transition: all 0.2s ease;
-}
-.modal-enter-from, .modal-leave-to {
-  opacity: 0;
-  transform: scale(0.97);
-}
+.invoice-actions { justify-content: center; gap: 16px; }
 
 @media (max-width: 820px) {
-  .sidebar { display: none; }
-  .main { padding: 20px 16px; }
+  .payments-layout {
+    padding: 20px 16px;
+  }
   .stats-grid { grid-template-columns: 1fr; }
 }
 </style>

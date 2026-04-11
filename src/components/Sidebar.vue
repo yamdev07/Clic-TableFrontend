@@ -13,7 +13,7 @@
     <nav class="sidebar-nav">
       <span class="nav-section-label">Espace de travail</span>
 
-      <router-link to="/" class="nav-item" :class="{ active: $route.path === '/' }">
+      <router-link to="/" class="nav-item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
           <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
@@ -23,7 +23,7 @@
         <span>Tableau de bord</span>
       </router-link>
 
-      <router-link to="/tables" class="nav-item" :class="{ active: $route.path === '/tables' }">
+      <router-link to="/tables" class="nav-item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M3 6h18M3 18h18M6 6v12M18 6v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
@@ -31,7 +31,7 @@
         <span class="nav-badge">{{ stats.occupiedTables }}/{{ stats.tables }}</span>
       </router-link>
 
-      <router-link to="/orders" class="nav-item" :class="{ active: $route.path === '/orders' }">
+      <router-link to="/orders" class="nav-item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.5"/>
           <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.5"/>
@@ -41,7 +41,7 @@
         <span v-if="stats.activeOrders > 0" class="nav-badge accent">{{ stats.activeOrders }}</span>
       </router-link>
 
-      <router-link to="/menu" class="nav-item" :class="{ active: $route.path === '/menu' }">
+      <router-link to="/menu" class="nav-item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" stroke="currentColor" stroke-width="1.5"/>
           <path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -49,7 +49,17 @@
         <span>Menu</span>
       </router-link>
 
-      <router-link v-if="authStore.isKitchen" to="/kitchen" class="nav-item" :class="{ active: $route.path === '/kitchen' }">
+      <!-- LIEN PAIEMENTS AJOUTÉ ICI -->
+      <router-link to="/payments" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M18 8h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>Paiements</span>
+      </router-link>
+
+      <router-link v-if="authStore.isKitchen" to="/kitchen" class="nav-item">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M6 2v6a3 3 0 0 0 6 0V2M9 2v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <path d="M18 2c0 0 0 6-3 6s-3-6-3-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -201,12 +211,6 @@ onMounted(() => {
 .nav-item:hover {
   background: rgba(255,255,255,0.07);
   color: rgba(255,255,255,0.9);
-}
-
-.nav-item.active,
-.router-link-active.nav-item {
-  background: rgba(124,58,237,0.18);
-  color: #c4b5fd;
 }
 
 .nav-item span:first-of-type {
