@@ -45,7 +45,7 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/payments/:orderId',
+    path: '/payments',
     name: 'Payments',
     component: () => import('@/views/Payments.vue'),
     meta: { requiresAuth: true },
@@ -57,18 +57,18 @@ const router = createRouter({
   routes,
 })
 
-// Navigation guard
-router.beforeEach((to, from, next) => {
+// Navigation guard corrigée (sans next())
+router.beforeEach((to, from) => {
   const authStore = useAuthStore()
   const isAuthenticated = authStore.isAuthenticated
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
-  } else if (to.meta.requiresGuest && isAuthenticated) {
-    next('/')
-  } else {
-    next()
+    return '/login'
   }
+  if (to.meta.requiresGuest && isAuthenticated) {
+    return '/'
+  }
+  return true
 })
 
 export default router

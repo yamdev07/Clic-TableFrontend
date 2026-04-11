@@ -9,6 +9,8 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(Toaster)
+
+// Toaster est un composant, pas un plugin
+app.component('Toaster', Toaster)
 
 app.mount('#app')
