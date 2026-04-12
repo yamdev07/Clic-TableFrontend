@@ -19,25 +19,57 @@
 
     <!-- KPI strip -->
     <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Tables occupées</div>
+      <div class="kpi-card kpi-tables">
+        <div class="kpi-top">
+          <div class="kpi-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="7" width="20" height="2" rx="1" fill="currentColor" opacity="0.7"/>
+              <rect x="2" y="15" width="20" height="2" rx="1" fill="currentColor" opacity="0.7"/>
+              <line x1="6"  y1="7" x2="6"  y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="18" y1="7" x2="18" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="kpi-badge" :class="occupancyPct > 70 ? 'badge-red' : 'badge-green'">
+            {{ occupancyPct }}%
+          </span>
+        </div>
         <div class="kpi-value">{{ stats.occupiedTables }}<span class="kpi-total">/{{ stats.tables }}</span></div>
+        <div class="kpi-label">Tables occupées</div>
         <div class="kpi-bar-track">
           <div class="kpi-bar-fill" :style="{ width: occupancyPct + '%' }"></div>
         </div>
-        <div class="kpi-foot">{{ occupancyPct }}% d'occupation</div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Commandes actives</div>
+      <div class="kpi-card kpi-orders">
+        <div class="kpi-top">
+          <div class="kpi-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span v-if="stats.activeOrders > 0" class="kpi-badge badge-blue">Actif</span>
+        </div>
         <div class="kpi-value">{{ stats.activeOrders }}</div>
+        <div class="kpi-label">Commandes actives</div>
         <div class="kpi-foot">en cours de préparation</div>
       </div>
 
-      <div class="kpi-card kpi-accent">
-        <div class="kpi-label">CA aujourd'hui</div>
+      <div class="kpi-card kpi-revenue">
+        <div class="kpi-top">
+          <div class="kpi-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M2 10h20" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M6 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="kpi-badge badge-purple">Aujourd'hui</span>
+        </div>
         <div class="kpi-value kpi-money">{{ formatMoney(stats.todayRevenue) }}</div>
-        <div class="kpi-foot">{{ stats.todayOrders }} commande{{ stats.todayOrders !== 1 ? 's' : '' }}</div>
+        <div class="kpi-label">Chiffre d'affaires</div>
+        <div class="kpi-foot">{{ stats.todayOrders }} commande{{ stats.todayOrders !== 1 ? 's' : '' }} ce jour</div>
       </div>
     </div>
 
@@ -168,11 +200,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 const stats = ref({
@@ -240,11 +270,6 @@ const getStatusLabel = (status) => ({
   cancelled: 'Annulé',
 }[status] || status)
 
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
-}
-
 onMounted(() => {
   loadStats()
   setInterval(loadStats, 30000)
@@ -252,11 +277,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 .dashboard {
   min-height: 100vh;
-  background: #f4f4f6;
+  background: #f2f2f6;
   font-family: 'DM Sans', sans-serif;
   color: #0f0f12;
   padding: 32px 36px;
@@ -272,7 +297,7 @@ onMounted(() => {
 
 .page-title {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 700;
   color: #0f0f12;
   margin: 0 0 3px;
   letter-spacing: -0.03em;
@@ -285,11 +310,7 @@ onMounted(() => {
   text-transform: capitalize;
 }
 
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.topbar-right { display: flex; align-items: center; gap: 10px; }
 
 .refresh-chip {
   display: flex;
@@ -305,12 +326,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.15s;
 }
-
-.refresh-chip:hover {
-  border-color: #c4b5fd;
-  color: #7c3aed;
-  background: #f5f3ff;
-}
+.refresh-chip:hover { border-color: #c4b5fd; color: #7c3aed; background: #f5f3ff; }
 
 /* ── KPI Grid ── */
 .kpi-grid {
@@ -322,51 +338,72 @@ onMounted(() => {
 
 .kpi-card {
   background: white;
-  border: 1px solid #e4e4ec;
-  border-radius: 12px;
-  padding: 20px 22px;
+  border: 1px solid #e8e8f0;
+  border-radius: 14px;
+  padding: 20px 22px 18px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.kpi-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
 }
 
-.kpi-card.kpi-accent {
-  background: #0f0f12;
-  border-color: #0f0f12;
+/* Accent coloré gauche */
+.kpi-tables { border-left: 3px solid #f87171; }
+.kpi-orders { border-left: 3px solid #60a5fa; }
+.kpi-revenue { border-left: 3px solid #a78bfa; }
+
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
-.kpi-label {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9b9bab;
+.kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.kpi-tables .kpi-icon  { background: #fee2e2; color: #ef4444; }
+.kpi-orders .kpi-icon  { background: #dbeafe; color: #3b82f6; }
+.kpi-revenue .kpi-icon { background: #ede9fe; color: #7c3aed; }
 
-.kpi-accent .kpi-label {
-  color: rgba(255,255,255,0.4);
+.kpi-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
 }
+.badge-red    { background: #fee2e2; color: #991b1b; }
+.badge-green  { background: #dcfce7; color: #166534; }
+.badge-blue   { background: #dbeafe; color: #1e40af; }
+.badge-purple { background: #ede9fe; color: #6d28d9; }
 
 .kpi-value {
-  font-size: 32px;
-  font-weight: 600;
+  font-size: 34px;
+  font-weight: 700;
   color: #0f0f12;
   letter-spacing: -0.04em;
   line-height: 1;
 }
+.kpi-money { font-size: 22px; }
+.kpi-total { font-size: 20px; font-weight: 400; color: #c5c5d0; }
 
-.kpi-accent .kpi-value {
-  color: white;
-}
-
-.kpi-money {
-  font-size: 22px;
-}
-
-.kpi-total {
-  font-size: 18px;
-  font-weight: 400;
-  color: #c5c5d0;
+.kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9b9bab;
+  margin-top: 2px;
 }
 
 .kpi-bar-track {
@@ -374,24 +411,15 @@ onMounted(() => {
   background: #f0f0f5;
   border-radius: 99px;
   overflow: hidden;
-  margin: 4px 0 0;
+  margin-top: 10px;
 }
-
 .kpi-bar-fill {
   height: 100%;
-  background: #7c3aed;
+  background: linear-gradient(90deg, #f87171, #ef4444);
   border-radius: 99px;
   transition: width 0.6s ease;
 }
-
-.kpi-foot {
-  font-size: 12px;
-  color: #9b9bab;
-}
-
-.kpi-accent .kpi-foot {
-  color: rgba(255,255,255,0.3);
-}
+.kpi-foot { font-size: 11.5px; color: #b0b0c0; margin-top: 4px; }
 
 /* ── Section header ── */
 .section-header {
@@ -400,7 +428,6 @@ onMounted(() => {
   justify-content: space-between;
   margin-bottom: 12px;
 }
-
 .section-title {
   font-size: 14px;
   font-weight: 600;
@@ -416,63 +443,43 @@ onMounted(() => {
   gap: 12px;
   margin-bottom: 32px;
 }
-
 .action-card {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
   background: white;
-  border: 1px solid #e4e4ec;
+  border: 1px solid #e8e8f0;
   border-radius: 12px;
   text-decoration: none;
   color: inherit;
   transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-
 .action-card:hover {
   border-color: #c4b5fd;
   background: #faf9ff;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(124,58,237,0.1);
 }
-
-.action-card:hover .action-arrow {
-  color: #7c3aed;
-  transform: translateX(2px);
-}
+.action-card:hover .action-arrow { color: #7c3aed; transform: translateX(3px); }
 
 .action-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: #f4f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #6b6b7b;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: all 0.15s;
 }
+.action-card:hover .action-icon-wrap { background: #ede9fe; color: #7c3aed; }
 
-.action-card:hover .action-icon-wrap {
-  background: #ede9fe;
-  color: #7c3aed;
-}
-
-.action-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.action-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #0f0f12;
-}
-
+.action-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.action-title { font-size: 13.5px; font-weight: 600; color: #0f0f12; }
 .action-desc {
   font-size: 11.5px;
   color: #9b9bab;
@@ -480,86 +487,45 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.action-arrow {
-  color: #c5c5d0;
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
+.action-arrow { color: #d0d0dc; flex-shrink: 0; transition: all 0.15s; }
 
 /* ── Data table ── */
 .table-wrap {
   background: white;
-  border: 1px solid #e4e4ec;
-  border-radius: 12px;
+  border: 1px solid #e8e8f0;
+  border-radius: 14px;
   overflow: hidden;
   margin-bottom: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-
+.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .data-table thead th {
-  padding: 12px 16px;
+  padding: 13px 18px;
   text-align: left;
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9b9bab;
-  background: #fafafc;
-  border-bottom: 1px solid #e4e4ec;
-}
-
-.data-row td {
-  padding: 13px 16px;
-  border-bottom: 1px solid #f0f0f5;
-  color: #3f3f4e;
-}
-
-.data-row:last-child td {
-  border-bottom: none;
-}
-
-.data-row:hover td {
-  background: #fafafc;
-}
-
-.order-num {
+  font-size: 10.5px;
   font-weight: 600;
-  color: #0f0f12 !important;
-  font-family: 'DM Sans', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #b0b0c0;
+  background: #fafafc;
+  border-bottom: 1px solid #f0f0f5;
 }
-
-.order-total {
-  font-weight: 500;
-  color: #0f0f12 !important;
-}
-
-.order-date {
-  color: #9b9bab !important;
-  font-size: 12.5px;
-}
-
-.empty-row {
-  text-align: center;
-  padding: 40px !important;
-  color: #c5c5d0 !important;
-  font-size: 13px;
-}
+.data-row td { padding: 13px 18px; border-bottom: 1px solid #f5f5f8; color: #3f3f4e; }
+.data-row:last-child td { border-bottom: none; }
+.data-row:hover td { background: #fafafd; }
+.order-num  { font-weight: 700; color: #0f0f12 !important; }
+.order-total { font-weight: 600; color: #0f0f12 !important; }
+.order-date { color: #b0b0c0 !important; font-size: 12.5px; }
+.empty-row  { text-align: center; padding: 44px !important; color: #d0d0dc !important; font-size: 13px; }
 
 /* ── Status pills ── */
 .status-pill {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 99px;
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
 }
-
 .status-pill.open        { background: #fef9c3; color: #854d0e; }
 .status-pill.in_progress { background: #dbeafe; color: #1e40af; }
 .status-pill.ready       { background: #dcfce7; color: #166534; }
