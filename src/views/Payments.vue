@@ -6,6 +6,13 @@
         <p class="page-sub">Gestion des encaissements</p>
       </div>
       <div class="topbar-actions">
+        <button class="btn-ghost" @click="openFondCaisse">
+          💼 Fond de caisse
+          <span v-if="fondDeCaisse > 0" class="fond-badge">{{ formatMoney(fondDeCaisse) }}</span>
+        </button>
+        <button class="btn-ghost btn-z" @click="openZReport">
+          📊 Rapport Z
+        </button>
         <button class="btn-ghost" @click="loadData">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
             <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -44,7 +51,7 @@
     <!-- Orders list -->
     <div class="orders-section">
       <div class="section-header">
-        <h2 class="section-title">Commandes à encaisser</h2>
+        <h2 class="section-title">Commandes</h2>
         <div class="filter-chips">
           <button
             v-for="filter in filters"
@@ -63,7 +70,7 @@
           v-for="order in filteredOrders"
           :key="order.id"
           class="order-card"
-          @click="openPaymentModal(order)"
+          :class="{ 'card-paid': (order.due_amount || 0) <= 0 }"
         >
           <div class="order-card-header">
             <span class="order-number">#{{ order.order_number }}</span>
@@ -77,17 +84,30 @@
                 <path d="M3 6h18M3 18h18M6 6v12M18 6v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
               Table {{ order.table?.number }}
+              <span class="order-date">· {{ formatDate(order.created_at) }}</span>
             </div>
             <div class="order-total">{{ formatMoney(order.total) }}</div>
             <div class="order-paid">
               Payé: {{ formatMoney(order.paid_amount || 0) }}
             </div>
-            <div class="order-due" :class="{ negative: (order.due_amount || 0) > 0 }">
-              Reste: {{ formatMoney(order.due_amount || 0) }}
+            <div class="order-due" :class="{ 'is-paid': (order.due_amount || 0) <= 0 }">
+              {{ (order.due_amount || 0) > 0 ? 'Reste: ' + formatMoney(order.due_amount) : '✓ Soldé' }}
             </div>
           </div>
           <div class="order-card-footer">
-            <button class="pay-btn">💰 Encaisser</button>
+            <button
+              v-if="(order.due_amount || 0) > 0"
+              class="pay-btn"
+              @click="openPaymentModal(order)"
+            >
+              💰 Encaisser
+            </button>
+            <button
+              class="invoice-btn"
+              @click="viewInvoice(order)"
+            >
+              🧾 Facture
+            </button>
           </div>
         </div>
         <div v-if="filteredOrders.length === 0" class="empty-state">
@@ -149,22 +169,48 @@
               </div>
 
               <div class="form-group">
-                <label>Montant à payer</label>
+                <label>Montant à encaisser</label>
                 <input
                   type="number"
                   v-model="paymentAmount"
                   class="amount-input"
-                  :max="selectedOrder.due_amount"
                   step="100"
                 />
                 <div class="quick-amounts">
                   <button @click="paymentAmount = selectedOrder.due_amount" class="quick-btn">
                     Montant exact
                   </button>
-                  <button @click="paymentAmount = Math.ceil(selectedOrder.due_amount / 100) * 100" class="quick-btn">
-                    Arrondir supérieur
+                  <button @click="paymentAmount = Math.ceil(selectedOrder.due_amount / 500) * 500" class="quick-btn">
+                    Arrondir 500
+                  </button>
+                  <button @click="paymentAmount = Math.ceil(selectedOrder.due_amount / 1000) * 1000" class="quick-btn">
+                    Arrondir 1000
                   </button>
                 </div>
+              </div>
+
+              <!-- Cash received + change (only for cash payments) -->
+              <div v-if="paymentMethod === 'cash'" class="form-group">
+                <label>Reçu du client (espèces)</label>
+                <input
+                  type="number"
+                  v-model="cashReceived"
+                  class="amount-input"
+                  step="500"
+                  :placeholder="paymentAmount"
+                />
+                <div class="quick-amounts">
+                  <button @click="cashReceived = paymentAmount" class="quick-btn">Montant exact</button>
+                  <button @click="cashReceived = Math.ceil(paymentAmount / 500) * 500" class="quick-btn">+500</button>
+                  <button @click="cashReceived = Math.ceil(paymentAmount / 1000) * 1000" class="quick-btn">+1000</button>
+                  <button @click="cashReceived = Math.ceil(paymentAmount / 5000) * 5000" class="quick-btn">+5000</button>
+                </div>
+              </div>
+
+              <!-- Change display -->
+              <div v-if="paymentMethod === 'cash' && changeAmount > 0" class="change-display">
+                <div class="change-label">Monnaie à rendre</div>
+                <div class="change-amount">{{ formatMoney(changeAmount) }}</div>
               </div>
 
               <div class="form-group">
@@ -178,11 +224,122 @@
             <button class="action-btn ghost" @click="closeModal">Annuler</button>
             <button
               class="action-btn primary"
-              :disabled="!paymentAmount || paymentAmount <= 0 || paymentAmount > (selectedOrder.due_amount || 0)"
+              :disabled="!paymentAmount || paymentAmount <= 0"
               @click="processPayment"
             >
-              Encaisser {{ formatMoney(paymentAmount) }}
+              Encaisser {{ formatMoney(Math.min(paymentAmount, selectedOrder.due_amount || 0)) }}
             </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ── Fond de caisse Modal ── -->
+    <Transition name="modal">
+      <div v-if="showFondModal" class="modal-overlay" @click="showFondModal = false">
+        <div class="modal-card" style="max-width:420px" @click.stop>
+          <div class="modal-header">
+            <div>
+              <p class="modal-eyebrow">Caisse</p>
+              <h2 class="modal-title">💼 Fond de caisse</h2>
+            </div>
+            <button class="modal-close" @click="showFondModal = false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p style="font-size:13px;color:#6b6b7b;margin-bottom:16px">
+              Saisissez le montant mis dans la caisse en début de journée.
+            </p>
+            <div class="form-group">
+              <label>Montant fond de caisse (FCFA)</label>
+              <input
+                type="number"
+                v-model="fondDeCaisseInput"
+                class="amount-input"
+                step="1000"
+                placeholder="ex: 50000"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn ghost" @click="showFondModal = false">Annuler</button>
+            <button class="action-btn primary" @click="saveFondCaisse">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ── Rapport Z Modal ── -->
+    <Transition name="modal">
+      <div v-if="showZModal" class="modal-overlay" @click="showZModal = false">
+        <div class="modal-card z-report-modal" @click.stop>
+          <div class="modal-header">
+            <div>
+              <p class="modal-eyebrow">Rapport de clôture</p>
+              <h2 class="modal-title">📊 Rapport Z — {{ zReportDate }}</h2>
+            </div>
+            <button class="modal-close" @click="showZModal = false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body" v-if="zReport">
+            <div class="z-date-picker">
+              <label>Date</label>
+              <input type="date" v-model="zReportDate" @change="loadZReport" class="date-input" />
+            </div>
+
+            <div class="z-stats">
+              <div class="z-stat-card">
+                <div class="z-stat-label">Commandes du jour</div>
+                <div class="z-stat-value">{{ zReport.total_orders }}</div>
+              </div>
+              <div class="z-stat-card green">
+                <div class="z-stat-label">Payées</div>
+                <div class="z-stat-value">{{ zReport.paid_orders }}</div>
+              </div>
+              <div class="z-stat-card red">
+                <div class="z-stat-label">Annulées</div>
+                <div class="z-stat-value">{{ zReport.cancelled_orders }}</div>
+              </div>
+            </div>
+
+            <div class="z-summary">
+              <div class="z-row">
+                <span>Fond de caisse</span>
+                <span>{{ formatMoney(fondDeCaisse) }}</span>
+              </div>
+              <div class="z-row">
+                <span>CA brut (commandes payées)</span>
+                <span>{{ formatMoney(zReport.total_revenue) }}</span>
+              </div>
+              <div class="z-row" v-for="bp in zReport.payment_breakdown" :key="bp.label">
+                <span class="z-method-label">
+                  <span class="z-method-dot"></span>
+                  {{ bp.label }} ({{ bp.count }} paiement{{ bp.count > 1 ? 's' : '' }})
+                </span>
+                <span>{{ formatMoney(bp.amount) }}</span>
+              </div>
+              <div class="z-row total">
+                <span>Total encaissé</span>
+                <span>{{ formatMoney(zReport.total_paid) }}</span>
+              </div>
+              <div class="z-row ecart" :class="{ negative: (zReport.total_paid + fondDeCaisse - zReport.total_revenue) < 0 }">
+                <span>Écart caisse (fond + recettes - CA)</span>
+                <span>{{ formatMoney(zReport.total_paid + fondDeCaisse - zReport.total_revenue) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-body" v-else style="text-align:center;padding:40px;color:#9b9bab">
+            Chargement...
+          </div>
+          <div class="modal-footer invoice-actions">
+            <button class="action-btn print" @click="printZReport">🖨️ Imprimer</button>
+            <button class="action-btn ghost" @click="showZModal = false">Fermer</button>
           </div>
         </div>
       </div>
@@ -264,21 +421,27 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
-
-const router = useRouter()
-const authStore = useAuthStore()
 
 const orders = ref([])
 const activeFilter = ref('all')
 const selectedOrder = ref(null)
 const paymentMethod = ref('cash')
 const paymentAmount = ref(0)
+const cashReceived = ref(0)
 const paymentReference = ref('')
 const showInvoiceModal = ref(false)
 const invoiceData = ref(null)
+
+// Fond de caisse
+const showFondModal = ref(false)
+const fondDeCaisseInput = ref(0)
+const fondDeCaisse = ref(parseInt(localStorage.getItem('fond_de_caisse') || '0'))
+
+// Rapport Z
+const showZModal = ref(false)
+const zReportDate = ref(new Date().toISOString().split('T')[0])
+const zReport = ref(null)
 
 const filters = [
   { value: 'all', label: 'Toutes' },
@@ -331,10 +494,18 @@ const loadData = async () => {
   }
 }
 
+const changeAmount = computed(() => {
+  if (paymentMethod.value !== 'cash') return 0
+  const received = parseFloat(cashReceived.value) || 0
+  const amount = parseFloat(paymentAmount.value) || 0
+  return Math.max(0, received - amount)
+})
+
 const openPaymentModal = (order) => {
   selectedOrder.value = order
   paymentMethod.value = 'cash'
   paymentAmount.value = order.due_amount || 0
+  cashReceived.value = order.due_amount || 0
   paymentReference.value = ''
 }
 
@@ -342,20 +513,98 @@ const closeModal = () => {
   selectedOrder.value = null
 }
 
+// Fond de caisse
+const openFondCaisse = () => {
+  fondDeCaisseInput.value = fondDeCaisse.value
+  showFondModal.value = true
+}
+const saveFondCaisse = () => {
+  fondDeCaisse.value = parseInt(fondDeCaisseInput.value) || 0
+  localStorage.setItem('fond_de_caisse', fondDeCaisse.value)
+  showFondModal.value = false
+}
+
+// Rapport Z
+const openZReport = async () => {
+  showZModal.value = true
+  await loadZReport()
+}
+const loadZReport = async () => {
+  try {
+    const res = await api.get(`/stats/z-report?date=${zReportDate.value}`)
+    zReport.value = res.data
+  } catch (e) {
+    console.error('Erreur rapport Z', e)
+  }
+}
+const printZReport = () => {
+  const r = zReport.value
+  if (!r) return
+  const rows = (r.payment_breakdown || []).map(bp =>
+    `<tr><td>${bp.label}</td><td>${bp.count}</td><td style="text-align:right">${formatMoney(bp.amount)}</td></tr>`
+  ).join('')
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
+    <title>Rapport Z — ${r.date}</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:24px;font-size:13px}
+      h2{color:#7c3aed;margin-bottom:4px}
+      table{width:100%;border-collapse:collapse;margin:16px 0}
+      th,td{border:1px solid #ddd;padding:8px}
+      th{background:#f4f4f6}
+      .total{font-weight:700;font-size:14px}
+      .ecart{color:#16a34a}
+    </style></head><body>
+    <h2>📊 Rapport Z de caisse</h2>
+    <p>Date : ${r.date}</p>
+    <table>
+      <tr><th>Commandes totales</th><td>${r.total_orders}</td><th>Payées</th><td>${r.paid_orders}</td><th>Annulées</th><td>${r.cancelled_orders}</td></tr>
+    </table>
+    <table>
+      <thead><tr><th>Mode de paiement</th><th>Nbre</th><th>Montant</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <table>
+      <tr><td>Fond de caisse</td><td style="text-align:right">${formatMoney(fondDeCaisse.value)}</td></tr>
+      <tr><td>CA brut</td><td style="text-align:right">${formatMoney(r.total_revenue)}</td></tr>
+      <tr class="total"><td>Total encaissé</td><td style="text-align:right">${formatMoney(r.total_paid)}</td></tr>
+      <tr class="ecart"><td>Écart caisse</td><td style="text-align:right">${formatMoney(r.total_paid + fondDeCaisse.value - r.total_revenue)}</td></tr>
+    </table>
+    </body></html>`
+  const w = window.open('', '_blank')
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  setTimeout(() => { w.print(); w.close() }, 300)
+}
+
+const viewInvoice = async (order) => {
+  try {
+    const response = await api.get(`/orders/${order.id}`)
+    invoiceData.value = response.data
+    showInvoiceModal.value = true
+  } catch (error) {
+    console.error('Erreur chargement facture', error)
+    alert('Impossible de charger la facture')
+  }
+}
+
 const processPayment = async () => {
   if (!selectedOrder.value) return
 
+  const orderId = selectedOrder.value.id  // sauvegarder avant closeModal()
+
   try {
-    await api.post(`/orders/${selectedOrder.value.id}/payments`, {
+    await api.post(`/orders/${orderId}/payments`, {
       amount: paymentAmount.value,
       method: paymentMethod.value,
-      reference: paymentReference.value || null
+      cash_given: paymentMethod.value === 'cash' ? (cashReceived.value || paymentAmount.value) : null,
+      reference: paymentReference.value || null,
     })
 
-    await loadData()
     closeModal()
+    await loadData()
 
-    const orderResponse = await api.get(`/orders/${selectedOrder.value.id}`)
+    const orderResponse = await api.get(`/orders/${orderId}`)
     invoiceData.value = orderResponse.data
     showInvoiceModal.value = true
 
@@ -391,23 +640,86 @@ const printInvoice = () => {
   printWindow.close()
 }
 
-const downloadInvoice = async () => {
-  try {
-    const response = await api.get(`/orders/${invoiceData.value?.id}/invoice`, {
-      responseType: 'blob'
-    })
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `facture-${invoiceData.value?.order_number}.pdf`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
-  } catch (error) {
-    console.error('Erreur téléchargement facture', error)
-    alert('Erreur lors du téléchargement de la facture')
-  }
+const downloadInvoice = () => {
+  const inv = invoiceData.value
+  if (!inv) return
+
+  const formatM = (v) => new Intl.NumberFormat('fr-FR', {
+    style: 'currency', currency: 'XOF', minimumFractionDigits: 0
+  }).format(v || 0)
+
+  const rows = (inv.items || []).map(item => `
+    <tr>
+      <td>${item.item_name || ''}</td>
+      <td style="text-align:center">${item.quantity}</td>
+      <td style="text-align:right">${formatM(item.unit_price)}</td>
+      <td style="text-align:right">${formatM(item.total_price)}</td>
+    </tr>`).join('')
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Facture ${inv.order_number}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; font-size:13px; color:#111; padding:32px; }
+    .header { text-align:center; margin-bottom:24px; padding-bottom:16px; border-bottom:2px solid #7c3aed; }
+    .header h2 { color:#7c3aed; font-size:20px; margin-bottom:4px; }
+    .header p { color:#555; font-size:12px; }
+    .meta { display:flex; justify-content:space-between; margin-bottom:20px; font-size:12px; }
+    .meta div { line-height:1.7; }
+    table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+    th { background:#f4f4f6; padding:8px 10px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:2px solid #e4e4ec; }
+    td { padding:9px 10px; border-bottom:1px solid #f0f0f5; }
+    .totals { margin-left:auto; width:260px; }
+    .totals tr td { padding:5px 10px; }
+    .totals tr td:last-child { text-align:right; }
+    .totals .sep td { border-top:1px solid #e4e4ec; padding-top:10px; }
+    .totals .grand td { font-weight:700; font-size:15px; }
+    .totals .paid td { color:#10b981; }
+    .footer { text-align:center; margin-top:32px; font-size:11px; color:#999; border-top:1px solid #f0f0f5; padding-top:16px; }
+    @media print { body { padding:16px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Clic&amp;Table</h2>
+    <p>Dakar, Sénégal &nbsp;|&nbsp; Tel: +221 78 123 45 67</p>
+  </div>
+  <div class="meta">
+    <div>
+      <strong>N° Commande:</strong> ${inv.order_number}<br/>
+      <strong>Table:</strong> Table ${inv.table?.number || '—'}<br/>
+      <strong>Serveur:</strong> ${inv.user?.name || '—'}
+    </div>
+    <div style="text-align:right">
+      <strong>Date:</strong> ${new Date(inv.created_at).toLocaleString('fr-FR')}<br/>
+      <strong>Statut:</strong> ${inv.status === 'paid' ? 'Payée' : 'En cours'}
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Article</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unit.</th><th style="text-align:right">Total</th></tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <table class="totals">
+    <tr><td>Sous-total</td><td>${formatM(inv.subtotal)}</td></tr>
+    <tr><td>TVA 18%</td><td>${formatM(inv.tax)}</td></tr>
+    <tr><td>Service 5%</td><td>${formatM(inv.service_charge)}</td></tr>
+    <tr class="sep grand"><td>TOTAL</td><td>${formatM(inv.total)}</td></tr>
+    <tr class="paid"><td>Payé</td><td>${formatM(inv.paid_amount)}</td></tr>
+  </table>
+  <div class="footer">Merci de votre visite ! &nbsp;·&nbsp; Règlement espèces / carte / mobile money accepté</div>
+</body>
+</html>`
+
+  const win = window.open('', '_blank')
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print(); win.close() }, 400)
 }
 
 const formatMoney = (amount) => {
@@ -424,11 +736,6 @@ const formatDate = (date) => {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   })
-}
-
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
 }
 
 onMounted(() => {
@@ -622,7 +929,9 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
+.order-date { color: #c5c5d0; margin-left: 2px; }
 .order-total {
   font-size: 18px;
   font-weight: 600;
@@ -631,20 +940,42 @@ onMounted(() => {
 }
 .order-paid { font-size: 12px; color: #48bb78; }
 .order-due { font-size: 12px; color: #f56565; }
-.order-due.negative { color: #48bb78; }
+.order-due.is-paid { color: #10b981; font-weight: 500; }
+
+.card-paid { border-left: 3px solid #10b981; }
+
+.order-card-footer {
+  display: flex;
+  gap: 8px;
+}
 
 .pay-btn {
-  width: 100%;
-  padding: 10px;
+  flex: 1;
+  padding: 9px;
   background: #0f0f12;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 13px;
   transition: background 0.15s;
 }
 .pay-btn:hover { background: #2a2a35; }
+
+.invoice-btn {
+  flex: 1;
+  padding: 9px;
+  background: #f4f4f6;
+  border: 1px solid #e4e4ec;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  color: #6b6b7b;
+  transition: all 0.15s;
+}
+.invoice-btn:hover { background: #f5f3ff; border-color: #c4b5fd; color: #7c3aed; }
 
 .empty-state {
   text-align: center;
@@ -872,6 +1203,161 @@ onMounted(() => {
 }
 
 .invoice-actions { justify-content: center; gap: 16px; }
+
+/* Fond de caisse badge */
+.fond-badge {
+  display: inline-block;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.btn-z {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  background: #f5f3ff;
+}
+.btn-z:hover {
+  background: #ede9fe;
+}
+
+/* Change display */
+.change-display {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.change-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #92400e;
+}
+
+.change-amount {
+  font-size: 22px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+/* Rapport Z */
+.z-report-modal { max-width: 600px; }
+
+.z-date-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.z-date-picker label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b6b7b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.date-input {
+  padding: 8px 12px;
+  border: 1px solid #e4e4ec;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.date-input:focus {
+  border-color: #7c3aed;
+}
+
+.z-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.z-stat-card {
+  background: #fafafc;
+  border: 1px solid #e4e4ec;
+  border-radius: 10px;
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.z-stat-card.green { background: #f0fdf4; border-color: #bbf7d0; }
+.z-stat-card.red   { background: #fef2f2; border-color: #fecaca; }
+
+.z-stat-label {
+  font-size: 11px;
+  color: #9b9bab;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.z-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f0f12;
+}
+
+.z-summary {
+  background: #fafafc;
+  border-radius: 12px;
+  border: 1px solid #e4e4ec;
+  overflow: hidden;
+}
+
+.z-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0f5;
+}
+
+.z-row:last-child { border-bottom: none; }
+
+.z-row.total {
+  font-weight: 700;
+  font-size: 15px;
+  background: #f5f3ff;
+}
+
+.z-row.ecart {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.z-row.ecart.negative {
+  color: #dc2626;
+}
+
+.z-method-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4b5563;
+}
+
+.z-method-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #7c3aed;
+  flex-shrink: 0;
+}
 
 @media (max-width: 820px) {
   .payments-layout {
