@@ -234,7 +234,13 @@
                 <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="1.5"/>
                 <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
               </svg>
-              Voir commande
+              Voir commandes
+            </button>
+            <button v-if="selectedTable.status === 'occupied' && !selectedTable.currentOrder" @click="forceFreeTabe" class="action-btn warning">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Libérer la table
             </button>
             <button v-if="selectedTable.status === 'dirty'" @click="cleanTable" class="action-btn warning">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -331,7 +337,7 @@ export default {
       this.$router.push(`/orders/new/${this.selectedTable.id}`)
     },
     viewOrder() {
-      this.$router.push(`/orders/${this.selectedTable.currentOrder?.id}`)
+      this.$router.push('/orders')
     },
     async cleanTable() {
       try {
@@ -342,9 +348,18 @@ export default {
         console.error('Erreur nettoyage', error)
       }
     },
+    async forceFreeTabe() {
+      try {
+        await api.patch(`/tables/${this.selectedTable.id}/status`, { status: 'free' })
+        await this.loadTables()
+        this.closeModal()
+      } catch (error) {
+        console.error('Erreur libération table', error)
+      }
+    },
     openOrder(table) {
       if (table.status === 'free') this.$router.push(`/orders/new/${table.id}`)
-      else if (table.status === 'occupied') this.$router.push(`/orders/${table.currentOrder?.id}`)
+      else if (table.status === 'occupied') this.$router.push('/orders')
     },
     getStatusLabel(status) {
       return { free: 'Libre', occupied: 'Occupée', reserved: 'Réservée', dirty: 'À nettoyer' }[status] || status

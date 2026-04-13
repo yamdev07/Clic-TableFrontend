@@ -1,6 +1,28 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
 
+const ROLE_LABELS = {
+  admin: 'Administrateur',
+  manager: 'Gérant',
+  waiter: 'Serveur',
+  kitchen: 'Cuisinier',
+}
+
+// Which routes each role can access (by route name)
+const ROLE_PERMISSIONS = {
+  admin:   ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments', 'Users', 'Logs'],
+  manager: ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments'],
+  waiter:  ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder'],
+  kitchen: ['Kitchen', 'Menu'],
+}
+
+const ROLE_HOME = {
+  admin:   '/',
+  manager: '/',
+  waiter:  '/tables',
+  kitchen: '/kitchen',
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
@@ -16,6 +38,13 @@ export const useAuthStore = defineStore('auth', {
     isManager: (state) => state.user?.role === 'manager',
     userName: (state) => state.user?.name || '',
     userRole: (state) => state.user?.role || '',
+    userRoleLabel: (state) => ROLE_LABELS[state.user?.role] || state.user?.role || '',
+    homeRoute: (state) => ROLE_HOME[state.user?.role] || '/',
+    canAccess: (state) => (routeName) => {
+      if (!state.user?.role) return false
+      const allowed = ROLE_PERMISSIONS[state.user.role] || []
+      return allowed.includes(routeName)
+    },
   },
 
   actions: {

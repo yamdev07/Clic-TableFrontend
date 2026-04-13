@@ -44,7 +44,7 @@
     <!-- Orders list -->
     <div class="orders-section">
       <div class="section-header">
-        <h2 class="section-title">Commandes à encaisser</h2>
+        <h2 class="section-title">Commandes</h2>
         <div class="filter-chips">
           <button
             v-for="filter in filters"
@@ -63,7 +63,7 @@
           v-for="order in filteredOrders"
           :key="order.id"
           class="order-card"
-          @click="openPaymentModal(order)"
+          :class="{ 'card-paid': (order.due_amount || 0) <= 0 }"
         >
           <div class="order-card-header">
             <span class="order-number">#{{ order.order_number }}</span>
@@ -77,17 +77,30 @@
                 <path d="M3 6h18M3 18h18M6 6v12M18 6v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
               Table {{ order.table?.number }}
+              <span class="order-date">· {{ formatDate(order.created_at) }}</span>
             </div>
             <div class="order-total">{{ formatMoney(order.total) }}</div>
             <div class="order-paid">
               Payé: {{ formatMoney(order.paid_amount || 0) }}
             </div>
-            <div class="order-due" :class="{ negative: (order.due_amount || 0) > 0 }">
-              Reste: {{ formatMoney(order.due_amount || 0) }}
+            <div class="order-due" :class="{ 'is-paid': (order.due_amount || 0) <= 0 }">
+              {{ (order.due_amount || 0) > 0 ? 'Reste: ' + formatMoney(order.due_amount) : '✓ Soldé' }}
             </div>
           </div>
           <div class="order-card-footer">
-            <button class="pay-btn">💰 Encaisser</button>
+            <button
+              v-if="(order.due_amount || 0) > 0"
+              class="pay-btn"
+              @click="openPaymentModal(order)"
+            >
+              💰 Encaisser
+            </button>
+            <button
+              class="invoice-btn"
+              @click="viewInvoice(order)"
+            >
+              🧾 Facture
+            </button>
           </div>
         </div>
         <div v-if="filteredOrders.length === 0" class="empty-state">
@@ -264,12 +277,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
-
-const router = useRouter()
-const authStore = useAuthStore()
 
 const orders = ref([])
 const activeFilter = ref('all')
@@ -342,20 +350,33 @@ const closeModal = () => {
   selectedOrder.value = null
 }
 
+const viewInvoice = async (order) => {
+  try {
+    const response = await api.get(`/orders/${order.id}`)
+    invoiceData.value = response.data
+    showInvoiceModal.value = true
+  } catch (error) {
+    console.error('Erreur chargement facture', error)
+    alert('Impossible de charger la facture')
+  }
+}
+
 const processPayment = async () => {
   if (!selectedOrder.value) return
 
+  const orderId = selectedOrder.value.id  // sauvegarder avant closeModal()
+
   try {
-    await api.post(`/orders/${selectedOrder.value.id}/payments`, {
+    await api.post(`/orders/${orderId}/payments`, {
       amount: paymentAmount.value,
       method: paymentMethod.value,
       reference: paymentReference.value || null
     })
 
-    await loadData()
     closeModal()
+    await loadData()
 
-    const orderResponse = await api.get(`/orders/${selectedOrder.value.id}`)
+    const orderResponse = await api.get(`/orders/${orderId}`)
     invoiceData.value = orderResponse.data
     showInvoiceModal.value = true
 
@@ -391,23 +412,86 @@ const printInvoice = () => {
   printWindow.close()
 }
 
-const downloadInvoice = async () => {
-  try {
-    const response = await api.get(`/orders/${invoiceData.value?.id}/invoice`, {
-      responseType: 'blob'
-    })
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `facture-${invoiceData.value?.order_number}.pdf`)
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
-  } catch (error) {
-    console.error('Erreur téléchargement facture', error)
-    alert('Erreur lors du téléchargement de la facture')
-  }
+const downloadInvoice = () => {
+  const inv = invoiceData.value
+  if (!inv) return
+
+  const formatM = (v) => new Intl.NumberFormat('fr-FR', {
+    style: 'currency', currency: 'XOF', minimumFractionDigits: 0
+  }).format(v || 0)
+
+  const rows = (inv.items || []).map(item => `
+    <tr>
+      <td>${item.item_name || ''}</td>
+      <td style="text-align:center">${item.quantity}</td>
+      <td style="text-align:right">${formatM(item.unit_price)}</td>
+      <td style="text-align:right">${formatM(item.total_price)}</td>
+    </tr>`).join('')
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Facture ${inv.order_number}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; font-size:13px; color:#111; padding:32px; }
+    .header { text-align:center; margin-bottom:24px; padding-bottom:16px; border-bottom:2px solid #7c3aed; }
+    .header h2 { color:#7c3aed; font-size:20px; margin-bottom:4px; }
+    .header p { color:#555; font-size:12px; }
+    .meta { display:flex; justify-content:space-between; margin-bottom:20px; font-size:12px; }
+    .meta div { line-height:1.7; }
+    table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+    th { background:#f4f4f6; padding:8px 10px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; border-bottom:2px solid #e4e4ec; }
+    td { padding:9px 10px; border-bottom:1px solid #f0f0f5; }
+    .totals { margin-left:auto; width:260px; }
+    .totals tr td { padding:5px 10px; }
+    .totals tr td:last-child { text-align:right; }
+    .totals .sep td { border-top:1px solid #e4e4ec; padding-top:10px; }
+    .totals .grand td { font-weight:700; font-size:15px; }
+    .totals .paid td { color:#10b981; }
+    .footer { text-align:center; margin-top:32px; font-size:11px; color:#999; border-top:1px solid #f0f0f5; padding-top:16px; }
+    @media print { body { padding:16px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Clic&amp;Table</h2>
+    <p>Dakar, Sénégal &nbsp;|&nbsp; Tel: +221 78 123 45 67</p>
+  </div>
+  <div class="meta">
+    <div>
+      <strong>N° Commande:</strong> ${inv.order_number}<br/>
+      <strong>Table:</strong> Table ${inv.table?.number || '—'}<br/>
+      <strong>Serveur:</strong> ${inv.user?.name || '—'}
+    </div>
+    <div style="text-align:right">
+      <strong>Date:</strong> ${new Date(inv.created_at).toLocaleString('fr-FR')}<br/>
+      <strong>Statut:</strong> ${inv.status === 'paid' ? 'Payée' : 'En cours'}
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Article</th><th style="text-align:center">Qté</th><th style="text-align:right">Prix unit.</th><th style="text-align:right">Total</th></tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <table class="totals">
+    <tr><td>Sous-total</td><td>${formatM(inv.subtotal)}</td></tr>
+    <tr><td>TVA 18%</td><td>${formatM(inv.tax)}</td></tr>
+    <tr><td>Service 5%</td><td>${formatM(inv.service_charge)}</td></tr>
+    <tr class="sep grand"><td>TOTAL</td><td>${formatM(inv.total)}</td></tr>
+    <tr class="paid"><td>Payé</td><td>${formatM(inv.paid_amount)}</td></tr>
+  </table>
+  <div class="footer">Merci de votre visite ! &nbsp;·&nbsp; Règlement espèces / carte / mobile money accepté</div>
+</body>
+</html>`
+
+  const win = window.open('', '_blank')
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print(); win.close() }, 400)
 }
 
 const formatMoney = (amount) => {
@@ -424,11 +508,6 @@ const formatDate = (date) => {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   })
-}
-
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
 }
 
 onMounted(() => {
@@ -622,7 +701,9 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
+.order-date { color: #c5c5d0; margin-left: 2px; }
 .order-total {
   font-size: 18px;
   font-weight: 600;
@@ -631,20 +712,42 @@ onMounted(() => {
 }
 .order-paid { font-size: 12px; color: #48bb78; }
 .order-due { font-size: 12px; color: #f56565; }
-.order-due.negative { color: #48bb78; }
+.order-due.is-paid { color: #10b981; font-weight: 500; }
+
+.card-paid { border-left: 3px solid #10b981; }
+
+.order-card-footer {
+  display: flex;
+  gap: 8px;
+}
 
 .pay-btn {
-  width: 100%;
-  padding: 10px;
+  flex: 1;
+  padding: 9px;
   background: #0f0f12;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 13px;
   transition: background 0.15s;
 }
 .pay-btn:hover { background: #2a2a35; }
+
+.invoice-btn {
+  flex: 1;
+  padding: 9px;
+  background: #f4f4f6;
+  border: 1px solid #e4e4ec;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  color: #6b6b7b;
+  transition: all 0.15s;
+}
+.invoice-btn:hover { background: #f5f3ff; border-color: #c4b5fd; color: #7c3aed; }
 
 .empty-state {
   text-align: center;

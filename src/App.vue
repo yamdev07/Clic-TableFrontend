@@ -11,6 +11,7 @@
 <script>
 import { Toaster } from 'vue-sonner'
 import Sidebar from '@/components/Sidebar.vue'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'App',
@@ -21,6 +22,12 @@ export default {
   computed: {
     showSidebar() {
       return this.$route.path !== '/login'
+    }
+  },
+  async created() {
+    const authStore = useAuthStore()
+    if (authStore.token && !authStore.user) {
+      await authStore.fetchMe()
     }
   }
 }

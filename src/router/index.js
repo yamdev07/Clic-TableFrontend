@@ -50,6 +50,18 @@ const routes = [
     component: () => import('@/views/Payments.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/users',
+    name: 'Users',
+    component: () => import('@/views/Users.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/logs',
+    name: 'Logs',
+    component: () => import('@/views/Logs.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
@@ -57,17 +69,27 @@ const router = createRouter({
   routes,
 })
 
-// Navigation guard corrigée (sans next())
 router.beforeEach((to, from) => {
   const authStore = useAuthStore()
   const isAuthenticated = authStore.isAuthenticated
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    return '/login'
-  }
   if (to.meta.requiresGuest && isAuthenticated) {
-    return '/'
+    return authStore.homeRoute
   }
+
+  if (to.meta.requiresAuth) {
+    if (!isAuthenticated) return '/login'
+
+    // If user is loaded, enforce role-based access
+    if (authStore.user && to.name !== 'Login') {
+      const allowed = authStore.canAccess(to.name)
+      if (!allowed) {
+        // Redirect to their home if they don't have access
+        return authStore.homeRoute
+      }
+    }
+  }
+
   return true
 })
 

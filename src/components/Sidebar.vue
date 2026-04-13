@@ -21,7 +21,7 @@
     <nav class="sidebar-nav">
       <span class="nav-section-label">Espace de travail</span>
 
-      <router-link to="/" class="nav-item" exact-active-class="nav-active">
+      <router-link v-if="authStore.canAccess('Dashboard')" to="/" class="nav-item" exact-active-class="nav-active">
         <div class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/>
@@ -33,7 +33,7 @@
         <span class="nav-label">Tableau de bord</span>
       </router-link>
 
-      <router-link to="/tables" class="nav-item">
+      <router-link v-if="authStore.canAccess('Tables')" to="/tables" class="nav-item">
         <div class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <rect x="2" y="7" width="20" height="2" rx="1" stroke="currentColor" stroke-width="1.6" fill="currentColor" opacity="0.5"/>
@@ -48,7 +48,7 @@
         </span>
       </router-link>
 
-      <router-link to="/orders" class="nav-item">
+      <router-link v-if="authStore.canAccess('Orders')" to="/orders" class="nav-item">
         <div class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
@@ -62,7 +62,7 @@
         </span>
       </router-link>
 
-      <router-link to="/menu" class="nav-item">
+      <router-link v-if="authStore.canAccess('Menu')" to="/menu" class="nav-item">
         <div class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" stroke="currentColor" stroke-width="1.7"/>
@@ -72,7 +72,18 @@
         <span class="nav-label">Menu</span>
       </router-link>
 
-      <router-link to="/payments" class="nav-item">
+      <router-link v-if="authStore.canAccess('Kitchen')" to="/kitchen" class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path d="M6 2v6a3 3 0 0 0 6 0V2M9 2v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path d="M18 2c0 0 0 6-3 6s-3-6-3-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path d="M3 14h18v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z" stroke="currentColor" stroke-width="1.7"/>
+          </svg>
+        </div>
+        <span class="nav-label">Cuisine</span>
+      </router-link>
+
+      <router-link v-if="authStore.canAccess('Payments')" to="/payments" class="nav-item">
         <div class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/>
@@ -83,15 +94,27 @@
         <span class="nav-label">Paiements</span>
       </router-link>
 
-      <router-link v-if="authStore.isKitchen" to="/kitchen" class="nav-item">
+      <router-link v-if="authStore.canAccess('Logs')" to="/logs" class="nav-item">
         <div class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-            <path d="M6 2v6a3 3 0 0 0 6 0V2M9 2v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-            <path d="M18 2c0 0 0 6-3 6s-3-6-3-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-            <path d="M3 14h18v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
           </svg>
         </div>
-        <span class="nav-label">Cuisine</span>
+        <span class="nav-label">Logs</span>
+      </router-link>
+
+      <router-link v-if="authStore.canAccess('Users')" to="/users" class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="nav-label">Utilisateurs</span>
       </router-link>
     </nav>
 
@@ -116,7 +139,7 @@
         <div class="user-avatar">{{ initials }}</div>
         <div class="user-meta">
           <span class="user-name">{{ authStore.userName }}</span>
-          <span class="user-role">{{ authStore.userRole }}</span>
+          <span class="user-role">{{ authStore.userRoleLabel }}</span>
         </div>
         <button @click="logout" class="logout-btn" title="Déconnexion">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
