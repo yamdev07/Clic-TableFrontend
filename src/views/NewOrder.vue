@@ -74,20 +74,41 @@
 
         <div v-else class="cart-items">
           <div v-for="(item, index) in cart" :key="index" class="cart-item">
-            <div class="cart-item-info">
-              <h4>{{ item.name }}</h4>
-              <div class="cart-item-price">
-                {{ formatMoney(item.price) }} x {{ item.quantity }}
+            <div class="cart-item-top">
+              <div class="cart-item-info">
+                <h4>{{ item.name }}</h4>
+                <div class="cart-item-price">
+                  {{ formatMoney(item.price) }} x {{ item.quantity }}
+                </div>
+              </div>
+              <div class="cart-item-actions">
+                <button @click="decrementQuantity(index)" class="qty-btn">-</button>
+                <span class="qty">{{ item.quantity }}</span>
+                <button @click="incrementQuantity(index)" class="qty-btn">+</button>
+                <button @click="removeItem(index)" class="remove-btn">🗑️</button>
+              </div>
+              <div class="cart-item-total">
+                {{ formatMoney(item.price * item.quantity) }}
               </div>
             </div>
-            <div class="cart-item-actions">
-              <button @click="decrementQuantity(index)" class="qty-btn">-</button>
-              <span class="qty">{{ item.quantity }}</span>
-              <button @click="incrementQuantity(index)" class="qty-btn">+</button>
-              <button @click="removeItem(index)" class="remove-btn">🗑️</button>
-            </div>
-            <div class="cart-item-total">
-              {{ formatMoney(item.price * item.quantity) }}
+            <div class="cart-item-notes">
+              <button
+                class="notes-toggle"
+                @click="item.showNotes = !item.showNotes"
+              >
+                <span>{{ item.special_instructions ? '📝' : '➕' }}</span>
+                <span>{{ item.special_instructions ? item.special_instructions : 'Ajouter une note...' }}</span>
+              </button>
+              <div v-if="item.showNotes" class="notes-input-wrap">
+                <input
+                  v-model="item.special_instructions"
+                  class="notes-input"
+                  type="text"
+                  placeholder="ex: sans piment, bien cuit, sauce à côté..."
+                  maxlength="200"
+                  @blur="item.showNotes = !!item.special_instructions"
+                />
+              </div>
             </div>
           </div>
 
@@ -195,11 +216,11 @@ export default {
     }
 
     const addToCart = (item) => {
-      const existing = cart.value.find(i => i.id === item.id)
+      const existing = cart.value.find(i => i.id === item.id && !i.special_instructions)
       if (existing) {
         existing.quantity++
       } else {
-        cart.value.push({ ...item, quantity: 1 })
+        cart.value.push({ ...item, quantity: 1, special_instructions: '', showNotes: false })
       }
     }
 
@@ -245,7 +266,8 @@ export default {
           console.log(`➕ Ajout: ${item.name} x${item.quantity}`)
           await api.post(`/orders/${orderId}/items`, {
             menu_item_id: item.id,
-            quantity: item.quantity
+            quantity: item.quantity,
+            special_instructions: item.special_instructions || null,
           })
         }
         
@@ -576,11 +598,14 @@ export default {
 }
 
 .cart-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f5;
+}
+
+.cart-item-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f5;
 }
 
 .cart-item-info {
@@ -603,6 +628,58 @@ export default {
   align-items: center;
   gap: 8px;
   margin: 0 12px;
+}
+
+.cart-item-notes {
+  margin-top: 6px;
+}
+
+.notes-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: #9ca3af;
+  padding: 2px 0;
+  transition: color 0.2s;
+  max-width: 100%;
+  text-align: left;
+}
+
+.notes-toggle:hover {
+  color: #7c3aed;
+}
+
+.notes-toggle span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+  font-style: italic;
+}
+
+.notes-input-wrap {
+  margin-top: 4px;
+}
+
+.notes-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #374151;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.notes-input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
 }
 
 .qty-btn {

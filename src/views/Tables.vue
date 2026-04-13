@@ -51,6 +51,40 @@
           <div class="legend-item"><span class="ldot dirty"></span>À nettoyer</div>
         </div>
         <div class="floor-plan" ref="floorPlan">
+
+          <!-- ── Comptoir ── -->
+          <div
+            class="comptoir"
+            :class="{ dragging: draggingComptoir, 'drag-mode': dragMode }"
+            :style="{ left: comptoir.x + 'px', top: comptoir.y + 'px' }"
+            @mousedown="startDragComptoir"
+          >
+            <!-- Bar stools (tabourets) -->
+            <div class="bar-stools">
+              <div v-for="i in 5" :key="i" class="bar-stool"></div>
+            </div>
+            <!-- Counter surface -->
+            <div class="counter-surface">
+              <div class="counter-inner">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="counter-icon">
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                <span class="counter-label">Comptoir</span>
+              </div>
+              <div class="counter-edge"></div>
+            </div>
+            <div v-if="dragMode" class="drag-handle comptoir-handle">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                <circle cx="9" cy="5" r="1.5" fill="currentColor"/>
+                <circle cx="15" cy="5" r="1.5" fill="currentColor"/>
+                <circle cx="9" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="15" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="9" cy="19" r="1.5" fill="currentColor"/>
+                <circle cx="15" cy="19" r="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+
           <div
             v-for="table in tables"
             :key="table.id"
@@ -262,6 +296,7 @@ import api from '@/services/api'
 export default {
   name: 'TablesView',
   data() {
+    const savedComptoir = JSON.parse(localStorage.getItem('comptoir_position') || 'null')
     return {
       tables: [],
       selectedTable: null,
@@ -269,6 +304,11 @@ export default {
       draggingTable: null,
       dragStartX: 0,
       dragStartY: 0,
+      // Comptoir
+      comptoir: savedComptoir || { x: 40, y: 520 },
+      draggingComptoir: false,
+      comptoirDragStartX: 0,
+      comptoirDragStartY: 0,
       // Modal de configuration
       showConfig: false,
       configLoading: false,
@@ -372,6 +412,13 @@ export default {
       this.dragStartY = event.clientY - table.y_position
     },
     onDrag(event) {
+      // Drag comptoir
+      if (this.draggingComptoir) {
+        this.comptoir.x = Math.max(0, Math.min(event.clientX - this.comptoirDragStartX, 1100))
+        this.comptoir.y = Math.max(0, Math.min(event.clientY - this.comptoirDragStartY, 700))
+        return
+      }
+      // Drag table
       if (!this.draggingTable) return
       const table = this.tables.find(t => t.id === this.draggingTable)
       if (!table) return
@@ -379,6 +426,12 @@ export default {
       table.y_position = Math.max(0, Math.min(event.clientY - this.dragStartY, 700))
     },
     async stopDrag() {
+      // Stop comptoir drag — sauvegarder position en localStorage
+      if (this.draggingComptoir) {
+        this.draggingComptoir = false
+        localStorage.setItem('comptoir_position', JSON.stringify({ x: this.comptoir.x, y: this.comptoir.y }))
+        return
+      }
       if (!this.draggingTable) return
       const table = this.tables.find(t => t.id === this.draggingTable)
       if (table) {
@@ -392,6 +445,16 @@ export default {
         }
       }
       this.draggingTable = null
+    },
+
+    // ── Comptoir drag ──
+    startDragComptoir(event) {
+      if (!this.dragMode) return
+      event.preventDefault()
+      event.stopPropagation()
+      this.draggingComptoir = true
+      this.comptoirDragStartX = event.clientX - this.comptoir.x
+      this.comptoirDragStartY = event.clientY - this.comptoir.y
     },
 
     // ── Configuration des tables ──
@@ -1038,6 +1101,155 @@ export default {
   color: #6b6b7b;
 }
 .action-btn.ghost:hover { background: #f4f4f6; }
+
+/* ═══════════════════════════════════════
+   COMPTOIR
+═══════════════════════════════════════ */
+.comptoir {
+  position: absolute;
+  width: 230px;
+  user-select: none;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.comptoir.drag-mode {
+  cursor: grab;
+}
+.comptoir.dragging {
+  cursor: grabbing;
+  z-index: 20;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5)) brightness(1.08);
+}
+
+/* Tabourets (bar stools) */
+.bar-stools {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+.bar-stool {
+  width: 28px;
+  height: 14px;
+  border-radius: 50% 50% 5px 5px / 8px 8px 5px 5px;
+  background: radial-gradient(ellipse at 40% 35%, #a07850 0%, #6b4c2a 55%, #4a3218 100%);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.5),
+    inset 0 1px 2px rgba(255,255,255,0.15);
+  position: relative;
+}
+
+.bar-stool::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 7px;
+  background: linear-gradient(to bottom, #6b4c2a, #4a3218);
+  border-radius: 0 0 2px 2px;
+}
+
+/* Surface principale du comptoir */
+.counter-surface {
+  width: 100%;
+  height: 56px;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(
+      88deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(0,0,0,0.06) 18px,
+      rgba(0,0,0,0.06) 19px
+    ),
+    repeating-linear-gradient(
+      2deg,
+      transparent 0px,
+      transparent 40px,
+      rgba(255,255,255,0.03) 40px,
+      rgba(255,255,255,0.03) 41px
+    ),
+    linear-gradient(160deg, #8b5e3c 0%, #5c3317 30%, #3d1f0a 65%, #2a1508 100%);
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.55),
+    0 1px 0 rgba(255,255,255,0.08) inset,
+    0 -2px 0 rgba(0,0,0,0.3) inset;
+  border: 1px solid rgba(255,255,255,0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Reflet brillant sur le dessus */
+.counter-surface::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0.12) 0%,
+    rgba(255,255,255,0.04) 60%,
+    transparent 100%);
+  border-radius: 10px 10px 0 0;
+  pointer-events: none;
+}
+
+/* Bord avant du comptoir (profil) */
+.counter-edge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(to bottom, #1a0a03, #0d0502);
+  border-radius: 0 0 10px 10px;
+}
+
+/* Contenu intérieur */
+.counter-inner {
+  position: absolute;
+  inset: 0;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  z-index: 1;
+}
+
+.counter-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 220, 170, 0.9);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.counter-icon {
+  color: rgba(255, 200, 130, 0.7);
+  flex-shrink: 0;
+}
+
+/* Drag handle positionné en haut à droite du comptoir */
+.comptoir-handle {
+  position: absolute;
+  top: 16px;
+  right: 6px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 5px;
+  padding: 3px;
+  color: rgba(255,255,255,0.5);
+  z-index: 10;
+}
 
 /* ── Modal transition ── */
 .modal-enter-active, .modal-leave-active {

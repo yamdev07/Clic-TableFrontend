@@ -35,7 +35,10 @@
             </div>
             <div class="card-footer">
               <span class="time">{{ formatTime(item.created_at) }}</span>
-              <button @click="startCooking(item)" class="action-btn start">Commencer</button>
+              <div class="card-actions">
+                <button @click="startCooking(item)" class="action-btn start">Commencer</button>
+                <button @click="confirmRupture(item)" class="action-btn rupture" title="Signaler rupture de stock">🚫</button>
+              </div>
             </div>
           </div>
           <div v-if="pendingItems.length === 0" class="empty-state">Aucune commande en attente</div>
@@ -162,6 +165,18 @@ export default {
         await this.loadOrders()
       } catch (error) {
         console.error('Erreur service', error)
+      }
+    },
+    async confirmRupture(item) {
+      const confirmed = window.confirm(
+        `🚫 Signaler rupture de stock pour "${item.item_name}" ?\n\nCela va retirer ce plat du menu jusqu'à réactivation.`
+      )
+      if (!confirmed) return
+      try {
+        await api.patch(`/kitchen/items/${item.id}/rupture`)
+        await this.loadOrders()
+      } catch (error) {
+        console.error('Erreur rupture de stock', error)
       }
     }
   }
@@ -344,6 +359,12 @@ export default {
   border-top: 1px solid #e2e8f0;
 }
 
+.card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .time {
   font-size: 11px;
   color: #a0aec0;
@@ -366,6 +387,14 @@ export default {
 
 .action-btn.serve { background: #48bb78; color: white; }
 .action-btn.serve:hover { background: #38a169; }
+
+.action-btn.rupture {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 4px 8px;
+}
+.action-btn.rupture:hover { background: #fecaca; }
 
 .empty-state {
   text-align: center;

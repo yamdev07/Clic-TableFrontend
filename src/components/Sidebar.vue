@@ -2,7 +2,7 @@
   <aside class="sidebar">
 
     <!-- Brand -->
-    <div class="sidebar-brand">
+    <router-link to="/" class="sidebar-brand">
       <div class="brand-logo">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <rect x="2" y="7" width="20" height="2" rx="1" fill="white" opacity="0.9"/>
@@ -15,7 +15,7 @@
         <span class="brand-name">Clic<em>&</em>Table</span>
         <span class="brand-tagline">Gestion de salle</span>
       </div>
-    </div>
+    </router-link>
 
     <!-- Nav -->
     <nav class="sidebar-nav">
@@ -170,12 +170,8 @@ const initials = computed(() =>
 
 const loadStats = async () => {
   try {
-    const tables = await api.get('/tables')
-    stats.value.tables = tables.data.length
-    stats.value.occupiedTables = tables.data.filter(t => t.status === 'occupied').length
-    const orders = await api.get('/orders')
-    const all = orders.data.data || orders.data
-    stats.value.activeOrders = all.filter(o => !['paid', 'cancelled'].includes(o.status)).length
+    const res = await api.get('/stats')
+    stats.value = res.data
   } catch {}
 }
 
@@ -209,7 +205,11 @@ onMounted(() => { loadStats(); setInterval(loadStats, 30000) })
   gap: 12px;
   padding: 22px 18px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
+.sidebar-brand:hover { opacity: 0.85; }
 .brand-logo {
   width: 36px;
   height: 36px;
