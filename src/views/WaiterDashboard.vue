@@ -256,6 +256,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+import { useEcho } from '@/composables/useEcho'
 
 const router    = useRouter()
 const authStore = useAuthStore()
@@ -269,6 +270,8 @@ const liveTime        = ref('')
 
 let refreshTimer = null
 let clockTimer   = null
+
+const { subscribeKitchen, subscribeRestaurant, disconnect: disconnectEcho } = useEcho()
 
 // ── Computed ────────────────────────────────────────────────────────────────
 const initials = computed(() => {
@@ -388,17 +391,86 @@ const markTableServed = async (table) => {
   await loadData()
 }
 
+// ── WebSocket handlers ────────────────────────────────────────────────────────
+
+/**
+ * Un item de cuisine a changé de statut → met à jour kitchenItems en place
+ * sans refaire un appel HTTP.
+ */
+function handleItemStatusChanged(data) {
+  const idx = kitchenItems.value.findIndex(i => i.id === data.id)
+  if (idx !== -1) {
+    if (data.kitchen_status === 'served') {
+      kitchenItems.value.splice(idx, 1)
+    } else {
+      kitchenItems.value[idx] = { ...kitchenItems.value[idx], ...data }
+    }
+  } else if (data.kitchen_status !== 'served') {
+    kitchenItems.value.push(data)
+  }
+  // Sync le statut dans la table courante aussi
+  syncTableItem(data)
+}
+
+/**
+ * Nouvelle commande reçue → ajoute à myActiveOrders et re-sync les tables.
+ */
+function handleNewOrder(data) {
+  const exists = myActiveOrders.value.some(o => o.id === data.id)
+  if (!exists) myActiveOrders.value.unshift(data)
+  // Rafraîchit les tables pour refléter la table occupée
+  loadData()
+}
+
+/**
+ * Statut global d'une commande changé (ex: payée → libère la table).
+ */
+function handleOrderStatusChanged(data) {
+  myActiveOrders.value = myActiveOrders.value.map(o =>
+    o.id === data.id ? { ...o, status: data.new_status } : o
+  ).filter(o => !['paid', 'cancelled'].includes(o.status))
+
+  if (['paid', 'cancelled'].includes(data.new_status)) {
+    loadData()
+  }
+}
+
+/**
+ * Propage le changement de statut d'un item dans table.currentOrder.items.
+ */
+function syncTableItem(data) {
+  tables.value.forEach(table => {
+    const items = table.currentOrder?.items
+    if (!items) return
+    const idx = items.findIndex(i => i.id === data.id)
+    if (idx !== -1) items[idx] = { ...items[idx], kitchen_status: data.kitchen_status }
+  })
+}
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
   loadData()
   tickClock()
   clockTimer   = setInterval(tickClock, 1000)
-  refreshTimer = setInterval(loadData, 15000)
+  // Polling de secours toutes les 60 s (le WS est la source principale)
+  refreshTimer = setInterval(loadData, 60000)
+
+  const restaurantId = authStore.user?.restaurant_id
+  if (restaurantId) {
+    subscribeKitchen(restaurantId, {
+      'item.status.changed': handleItemStatusChanged,
+      'order.received':      handleNewOrder,
+    })
+    subscribeRestaurant(restaurantId, {
+      'order.status.changed': handleOrderStatusChanged,
+    })
+  }
 })
 
 onBeforeUnmount(() => {
   clearInterval(clockTimer)
   clearInterval(refreshTimer)
+  disconnectEcho()
 })
 </script>
 

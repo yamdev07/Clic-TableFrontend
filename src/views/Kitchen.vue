@@ -103,84 +103,115 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import { useEcho } from '@/composables/useEcho'
 
-export default {
-  name: 'KitchenView',
-  data() {
-    return {
-      pendingItems: [],
-      cookingItems: [],
-      readyItems: [],
-      refreshInterval: null
-    }
-  },
-  mounted() {
-    this.loadOrders()
-    this.refreshInterval = setInterval(this.loadOrders, 10000)
-  },
-  beforeUnmount() {
-    if (this.refreshInterval) clearInterval(this.refreshInterval)
-  },
-  methods: {
-    formatTime(date) {
-      if (!date) return ''
-      return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-    },
-    async loadOrders() {
-      try {
-        const response = await api.get('/kitchen/pending')
-        const items = response.data
-        
-        this.pendingItems = items.filter(i => i.kitchen_status === 'pending')
-        this.cookingItems = items.filter(i => i.kitchen_status === 'cooking')
-        this.readyItems = items.filter(i => i.kitchen_status === 'ready')
-      } catch (error) {
-        console.error('Erreur chargement cuisine', error)
-      }
-    },
-    async refreshOrders() {
-      await this.loadOrders()
-    },
-    async startCooking(item) {
-      try {
-        await api.patch(`/kitchen/items/${item.id}/cooking`)
-        await this.loadOrders()
-      } catch (error) {
-        console.error('Erreur démarrage cuisson', error)
-      }
-    },
-    async markReady(item) {
-      try {
-        await api.patch(`/kitchen/items/${item.id}/ready`)
-        await this.loadOrders()
-      } catch (error) {
-        console.error('Erreur marquage prêt', error)
-      }
-    },
-    async serveItem(item) {
-      try {
-        await api.patch(`/kitchen/items/${item.id}/serve`)
-        await this.loadOrders()
-      } catch (error) {
-        console.error('Erreur service', error)
-      }
-    },
-    async confirmRupture(item) {
-      const confirmed = window.confirm(
-        `🚫 Signaler rupture de stock pour "${item.item_name}" ?\n\nCela va retirer ce plat du menu jusqu'à réactivation.`
-      )
-      if (!confirmed) return
-      try {
-        await api.patch(`/kitchen/items/${item.id}/rupture`)
-        await this.loadOrders()
-      } catch (error) {
-        console.error('Erreur rupture de stock', error)
-      }
+const authStore = useAuthStore()
+const { subscribeKitchen, disconnect: disconnectEcho } = useEcho()
+
+const allItems = ref([])
+
+const pendingItems = computed(() => allItems.value.filter(i => i.kitchen_status === 'pending'))
+const cookingItems = computed(() => allItems.value.filter(i => i.kitchen_status === 'cooking'))
+const readyItems   = computed(() => allItems.value.filter(i => i.kitchen_status === 'ready'))
+
+let refreshInterval = null
+
+// ── WebSocket handler ─────────────────────────────────────────────────────────
+function handleItemStatusChanged(data) {
+  const idx = allItems.value.findIndex(i => i.id === data.id)
+  if (idx !== -1) {
+    if (data.kitchen_status === 'served') {
+      allItems.value.splice(idx, 1)
+    } else {
+      allItems.value[idx] = { ...allItems.value[idx], ...data }
     }
   }
 }
+
+function handleNewOrder(data) {
+  // Nouvelle commande envoyée en cuisine : ajoute les items en attente
+  const newItems = (data.items || []).map(item => ({
+    ...item,
+    order: {
+      id:           data.id,
+      order_number: data.order_number,
+      table:        data.table,
+    },
+  }))
+  newItems.forEach(item => {
+    if (!allItems.value.some(i => i.id === item.id)) {
+      allItems.value.push(item)
+    }
+  })
+}
+
+// ── HTTP ──────────────────────────────────────────────────────────────────────
+const formatTime = (date) => {
+  if (!date) return ''
+  return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+async function loadOrders() {
+  try {
+    const response = await api.get('/kitchen/pending')
+    allItems.value = response.data
+  } catch (error) {
+    console.error('Erreur chargement cuisine', error)
+  }
+}
+
+const refreshOrders = () => loadOrders()
+
+async function startCooking(item) {
+  await api.patch(`/kitchen/items/${item.id}/cooking`)
+  // Optimistic update — WS will confirm
+  const idx = allItems.value.findIndex(i => i.id === item.id)
+  if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'cooking' }
+}
+
+async function markReady(item) {
+  await api.patch(`/kitchen/items/${item.id}/ready`)
+  const idx = allItems.value.findIndex(i => i.id === item.id)
+  if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'ready' }
+}
+
+async function serveItem(item) {
+  await api.patch(`/kitchen/items/${item.id}/serve`)
+  allItems.value = allItems.value.filter(i => i.id !== item.id)
+}
+
+async function confirmRupture(item) {
+  const confirmed = window.confirm(
+    `🚫 Signaler rupture de stock pour "${item.item_name}" ?\n\nCela va retirer ce plat du menu jusqu'à réactivation.`
+  )
+  if (!confirmed) return
+  await api.patch(`/kitchen/items/${item.id}/rupture`)
+  allItems.value = allItems.value.filter(i => i.id !== item.id)
+}
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+onMounted(() => {
+  loadOrders()
+  // Polling de secours toutes les 60 s (le WS est la source principale)
+  refreshInterval = setInterval(loadOrders, 60000)
+
+  const restaurantId = authStore.user?.restaurant_id
+  if (restaurantId) {
+    subscribeKitchen(restaurantId, {
+      'item.status.changed': handleItemStatusChanged,
+      'order.received':      handleNewOrder,
+    })
+  }
+})
+
+onBeforeUnmount(() => {
+  if (refreshInterval) clearInterval(refreshInterval)
+  disconnectEcho()
+})
 </script>
 
 <style scoped>
