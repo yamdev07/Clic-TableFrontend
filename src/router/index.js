@@ -34,6 +34,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/waiter',
+    name: 'WaiterDashboard',
+    component: () => import(/* webpackPrefetch: true */ '@/views/WaiterDashboard.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/orders/new/:tableId',
     name: 'NewOrder',
     component: () => import(/* webpackPrefetch: true */ '@/views/NewOrder.vue'),

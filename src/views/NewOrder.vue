@@ -262,14 +262,15 @@ export default {
           throw new Error('Impossible de récupérer l\'ID de la commande')
         }
         
-        for (const item of cart.value) {
-          console.log(`➕ Ajout: ${item.name} x${item.quantity}`)
-          await api.post(`/orders/${orderId}/items`, {
-            menu_item_id: item.id,
-            quantity: item.quantity,
-            special_instructions: item.special_instructions || null,
-          })
-        }
+        await Promise.all(
+          cart.value.map(item =>
+            api.post(`/orders/${orderId}/items`, {
+              menu_item_id: item.id,
+              quantity: item.quantity,
+              special_instructions: item.special_instructions || null,
+            })
+          )
+        )
         
         console.log('👨‍🍳 Envoi en cuisine...')
         await api.post(`/orders/${orderId}/send-to-kitchen`)
