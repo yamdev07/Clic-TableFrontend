@@ -12,14 +12,14 @@ const ROLE_LABELS = {
 const ROLE_PERMISSIONS = {
   admin:   ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments', 'Users', 'Logs'],
   manager: ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments'],
-  waiter:  ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder'],
+  waiter:  ['WaiterDashboard', 'Tables', 'Menu', 'Orders', 'NewOrder'],
   kitchen: ['Kitchen', 'Menu'],
 }
 
 const ROLE_HOME = {
   admin:   '/',
   manager: '/',
-  waiter:  '/tables',
+  waiter:  '/waiter',
   kitchen: '/kitchen',
 }
 
