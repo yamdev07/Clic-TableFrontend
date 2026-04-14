@@ -201,7 +201,6 @@ const handleLogin = async () => {
 
 <style scoped>
 /* ── Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&display=swap');
 
 /* ── Root ── */
 .login-root {
