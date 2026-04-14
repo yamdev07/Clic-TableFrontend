@@ -297,6 +297,7 @@
 
 <script>
 import api from '@/services/api'
+import { toast } from '@/composables/useNotif'
 
 export default {
   name: 'TablesView',
@@ -455,10 +456,10 @@ export default {
       if (table) {
         table._collision = false
         if (this.hasCollision(table)) {
-          // Snap back to original position — no save
           table.x_position = this.dragOriginalX
           table.y_position = this.dragOriginalY
           this.draggingTable = null
+          toast.error('Position occupée', { description: 'Déplacez la table ailleurs.' })
           return
         }
         try {
@@ -557,8 +558,9 @@ export default {
 
         await this.loadTables()
         this.showConfig = false
+        toast.success('Configuration appliquée', { description: `${target} table${target > 1 ? 's' : ''} configurée${target > 1 ? 's' : ''}` })
       } catch (error) {
-        console.error('Erreur configuration tables', error)
+        toast.error('Erreur configuration', { description: error.response?.data?.message || 'Impossible d\'appliquer la configuration' })
       } finally {
         this.configLoading = false
       }

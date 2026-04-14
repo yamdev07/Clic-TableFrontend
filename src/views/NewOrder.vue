@@ -149,7 +149,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
-import { toast } from 'vue-sonner'
+import { toast } from '@/composables/useNotif'
 
 export default {
   setup() {
