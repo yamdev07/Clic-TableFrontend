@@ -14,21 +14,28 @@
     <div class="categories-section">
       <div class="categories-header">
         <h2>Catégories</h2>
-        <button @click="openCategoryModal" class="btn-outline">
-          + Ajouter une catégorie
-        </button>
       </div>
       <div class="categories-list">
-        <button
+        <div
           v-for="cat in categories"
           :key="cat.id"
-          @click="selectedCategory = cat.id"
+          class="category-chip-wrap"
           :class="{ active: selectedCategory === cat.id }"
-          class="category-chip"
         >
-          {{ cat.name }}
-          <span class="category-count">{{ getItemCount(cat.id) }}</span>
-        </button>
+          <button
+            @click="selectedCategory = cat.id"
+            class="category-chip"
+            :class="{ active: selectedCategory === cat.id }"
+          >
+            {{ cat.name }}
+            <span class="category-count">{{ getItemCount(cat.id) }}</span>
+          </button>
+          <button
+            @click.stop="openCategoryModal(cat)"
+            class="chip-edit-btn"
+            title="Renommer"
+          >✏️</button>
+        </div>
       </div>
     </div>
 
@@ -73,7 +80,7 @@
     <!-- Modal Catégorie -->
     <div v-if="categoryModal" class="modal" @click.self="closeModals">
       <div class="modal-content">
-        <h2>{{ editingCategory ? 'Modifier' : 'Nouvelle' }} catégorie</h2>
+        <h2>Renommer la catégorie</h2>
         <input type="text" v-model="categoryForm.name" placeholder="Nom de la catégorie" />
         <div class="modal-actions">
           <button @click="saveCategory" class="btn-primary">Enregistrer</button>
@@ -105,12 +112,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
-
-const router = useRouter()
-const authStore = useAuthStore()
 
 // Menu data
 const categories = ref([])
@@ -233,11 +235,6 @@ const deleteItem = async (id) => {
   }
 }
 
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
-}
-
 onMounted(() => {
   loadData()
 })
@@ -343,6 +340,12 @@ onMounted(() => {
   gap: 10px;
 }
 
+.category-chip-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .category-chip {
   background: #f4f4f6;
   border: none;
@@ -359,6 +362,21 @@ onMounted(() => {
 .category-chip.active {
   background: #7c3aed;
   color: white;
+}
+
+.chip-edit-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 12px;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.category-chip-wrap:hover .chip-edit-btn {
+  opacity: 1;
 }
 
 .category-count {
