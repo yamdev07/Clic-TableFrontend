@@ -369,8 +369,8 @@
           <div class="invoice-body" ref="invoiceContent">
             <div class="restaurant-header">
               <h3>Clic&Table Restaurant</h3>
-              <p>Dakar, Sénégal</p>
-              <p>Tel: +221 78 123 45 67</p>
+              <p>Cotonou, Bénin</p>
+              <p>Tel: +2999000000</p>
             </div>
 
             <div class="invoice-details">
