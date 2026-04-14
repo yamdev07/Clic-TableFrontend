@@ -427,6 +427,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { toast } from '@/composables/useNotif'
 
 const orders = ref([])
 const loading = ref(true)
@@ -497,7 +498,7 @@ const loadData = async () => {
     const response = await api.get('/orders')
     orders.value = response.data.data || response.data
   } catch (error) {
-    console.error('Erreur chargement commandes', error)
+    toast.error('Impossible de charger les commandes')
   } finally {
     loading.value = false
   }
@@ -543,7 +544,7 @@ const loadZReport = async () => {
     const res = await api.get(`/stats/z-report?date=${zReportDate.value}`)
     zReport.value = res.data
   } catch (e) {
-    console.error('Erreur rapport Z', e)
+    toast.error('Impossible de charger le rapport Z')
   }
 }
 const printZReport = () => {
@@ -592,8 +593,7 @@ const viewInvoice = async (order) => {
     invoiceData.value = response.data
     showInvoiceModal.value = true
   } catch (error) {
-    console.error('Erreur chargement facture', error)
-    alert('Impossible de charger la facture')
+    toast.error('Impossible de charger la facture')
   }
 }
 
@@ -616,10 +616,12 @@ const processPayment = async () => {
     const orderResponse = await api.get(`/orders/${orderId}`)
     invoiceData.value = orderResponse.data
     showInvoiceModal.value = true
+    toast.success('Paiement enregistré', {
+      description: `${formatMoney(paymentAmount.value)} encaissé${changeAmount.value > 0 ? ` · Rendu : ${formatMoney(changeAmount.value)}` : ''}`,
+    })
 
   } catch (error) {
-    console.error('Erreur paiement', error)
-    alert('Erreur lors du paiement')
+    toast.error('Erreur lors du paiement', { description: error.response?.data?.message })
   }
 }
 

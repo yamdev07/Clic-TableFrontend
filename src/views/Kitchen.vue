@@ -116,6 +116,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useEcho } from '@/composables/useEcho'
+import { toast } from '@/composables/useNotif'
 
 const authStore = useAuthStore()
 const { subscribeKitchen, disconnect: disconnectEcho } = useEcho()
@@ -170,7 +171,7 @@ async function loadOrders() {
     const response = await api.get('/kitchen/pending')
     allItems.value = response.data
   } catch (error) {
-    console.error('Erreur chargement cuisine', error)
+    toast.error('Impossible de charger les commandes en cuisine')
   } finally {
     loading.value = false
   }
@@ -179,30 +180,41 @@ async function loadOrders() {
 const refreshOrders = () => loadOrders()
 
 async function startCooking(item) {
-  await api.patch(`/kitchen/items/${item.id}/cooking`)
-  // Optimistic update — WS will confirm
-  const idx = allItems.value.findIndex(i => i.id === item.id)
-  if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'cooking' }
+  try {
+    await api.patch(`/kitchen/items/${item.id}/cooking`)
+    const idx = allItems.value.findIndex(i => i.id === item.id)
+    if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'cooking' }
+    toast.success(`"${item.item_name}" en cours de cuisson`)
+  } catch { toast.error('Erreur lors du passage en cuisson') }
 }
 
 async function markReady(item) {
-  await api.patch(`/kitchen/items/${item.id}/ready`)
-  const idx = allItems.value.findIndex(i => i.id === item.id)
-  if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'ready' }
+  try {
+    await api.patch(`/kitchen/items/${item.id}/ready`)
+    const idx = allItems.value.findIndex(i => i.id === item.id)
+    if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'ready' }
+    toast.success(`"${item.item_name}" prêt à servir`)
+  } catch { toast.error('Erreur lors du passage en prêt') }
 }
 
 async function serveItem(item) {
-  await api.patch(`/kitchen/items/${item.id}/serve`)
-  allItems.value = allItems.value.filter(i => i.id !== item.id)
+  try {
+    await api.patch(`/kitchen/items/${item.id}/serve`)
+    allItems.value = allItems.value.filter(i => i.id !== item.id)
+    toast.success(`"${item.item_name}" servi`)
+  } catch { toast.error('Erreur lors du service') }
 }
 
 async function confirmRupture(item) {
   const confirmed = window.confirm(
-    `🚫 Signaler rupture de stock pour "${item.item_name}" ?\n\nCela va retirer ce plat du menu jusqu'à réactivation.`
+    `Signaler rupture de stock pour "${item.item_name}" ?\n\nCela va retirer ce plat du menu jusqu'à réactivation.`
   )
   if (!confirmed) return
-  await api.patch(`/kitchen/items/${item.id}/rupture`)
-  allItems.value = allItems.value.filter(i => i.id !== item.id)
+  try {
+    await api.patch(`/kitchen/items/${item.id}/rupture`)
+    allItems.value = allItems.value.filter(i => i.id !== item.id)
+    toast.warning(`Rupture signalée : "${item.item_name}"`)
+  } catch { toast.error('Erreur lors de la rupture') }
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────

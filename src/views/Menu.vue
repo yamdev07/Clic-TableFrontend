@@ -127,6 +127,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { toast } from '@/composables/useNotif'
 
 const loading = ref(true)
 
@@ -210,13 +211,15 @@ const saveCategory = async () => {
   try {
     if (editingCategory.value) {
       await api.put(`/categories/${editingCategory.value.id}`, categoryForm.value)
+      toast.success('Catégorie renommée', { description: categoryForm.value.name })
     } else {
       await api.post('/categories', categoryForm.value)
+      toast.success('Catégorie créée', { description: categoryForm.value.name })
     }
     await loadData()
     closeModals()
   } catch (error) {
-    console.error('Erreur sauvegarde catégorie', error)
+    toast.error('Erreur', { description: error.response?.data?.message || 'Impossible de sauvegarder la catégorie' })
   }
 }
 
@@ -224,32 +227,38 @@ const saveItem = async () => {
   try {
     if (editingItem.value) {
       await api.put(`/menu/${editingItem.value.id}`, itemForm.value)
+      toast.success('Plat mis à jour', { description: itemForm.value.name })
     } else {
       await api.post('/menu', itemForm.value)
+      toast.success('Plat ajouté au menu', { description: itemForm.value.name })
     }
     await loadData()
     closeModals()
   } catch (error) {
-    console.error('Erreur sauvegarde plat', error)
+    toast.error('Erreur', { description: error.response?.data?.message || 'Impossible de sauvegarder le plat' })
   }
 }
 
 const toggleAvailability = async (item) => {
+  const newState = !item.is_available
   try {
-    await api.patch(`/menu/${item.id}/availability`, { is_available: !item.is_available })
+    await api.patch(`/menu/${item.id}/availability`, { is_available: newState })
+    toast.success(newState ? `"${item.name}" disponible` : `"${item.name}" indisponible`)
     await loadData()
   } catch (error) {
-    console.error('Erreur changement disponibilité', error)
+    toast.error('Impossible de changer la disponibilité')
   }
 }
 
 const deleteItem = async (id) => {
-  if (confirm('Supprimer ce plat ?')) {
+  const item = items.value.find(i => i.id === id)
+  if (confirm(`Supprimer "${item?.name}" ?`)) {
     try {
       await api.delete(`/menu/${id}`)
+      toast.success('Plat supprimé')
       await loadData()
     } catch (error) {
-      console.error('Erreur suppression', error)
+      toast.error('Erreur', { description: error.response?.data?.message || 'Impossible de supprimer le plat' })
     }
   }
 }

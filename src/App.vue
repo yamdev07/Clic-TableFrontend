@@ -11,14 +11,14 @@
         </Transition>
       </router-view>
     </div>
-    <Toaster position="top-right" richColors />
+    <Notification />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Toaster } from 'vue-sonner'
+import Notification from '@/components/Notification.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNavLoader } from '@/composables/useNavLoader'

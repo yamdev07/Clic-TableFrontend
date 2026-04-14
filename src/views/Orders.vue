@@ -319,7 +319,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
+import { toast } from '@/composables/useNotif'
+
+const router = useRouter()
 
 const orders = ref([])
 const availableTables = ref([])
@@ -419,16 +423,36 @@ const loadTables = async () => {
   try {
     const res = await api.get('/tables')
     availableTables.value = res.data.filter(t => t.status === 'free')
-  } catch (e) { console.error('Erreur tables', e) }
+  } catch (e) {
+    toast.error('Impossible de charger les tables')
+  }
+}
+
+const statusLabels = {
+  open: 'Ouverte', in_progress: 'En préparation', ready: 'Prête',
+  served: 'Servie', paid: 'Payée', cancelled: 'Annulée',
 }
 
 const updateStatus = async (order, newStatus) => {
+  const oldStatus = order.status
+  order.status = newStatus
+  if (selectedOrder.value?.id === order.id) selectedOrder.value.status = newStatus
   try {
     await api.patch(`/orders/${order.id}/status`, { status: newStatus })
-    order.status = newStatus
-    if (selectedOrder.value?.id === order.id) selectedOrder.value.status = newStatus
+    const label = statusLabels[newStatus] || newStatus
+    if (newStatus === 'cancelled') {
+      toast.success(`Commande #${order.order_number} annulée`)
+    } else if (newStatus === 'paid') {
+      toast.success(`Commande #${order.order_number} encaissée`, { description: `Table ${order.table?.number}` })
+    } else {
+      toast.success(`Commande #${order.order_number} → ${label}`)
+    }
     await loadOrders()
-  } catch (e) { console.error('Erreur statut', e) }
+  } catch (e) {
+    order.status = oldStatus
+    if (selectedOrder.value?.id === order.id) selectedOrder.value.status = oldStatus
+    toast.error('Impossible de changer le statut', { description: e.response?.data?.message })
+  }
 }
 
 const openDetail = (order) => { selectedOrder.value = order }
@@ -440,12 +464,10 @@ const openNewOrder = async () => {
   showNewOrder.value = true
 }
 
-const createOrder = async () => {
-  try {
-    await api.post('/orders', { table_id: newOrderTableId.value })
-    showNewOrder.value = false
-    await loadOrders()
-  } catch (e) { console.error('Erreur création', e) }
+const createOrder = () => {
+  if (!newOrderTableId.value) return
+  showNewOrder.value = false
+  router.push(`/new-order/${newOrderTableId.value}`)
 }
 
 const sortBy = (key) => {
