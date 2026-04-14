@@ -65,7 +65,12 @@
         </div>
       </div>
 
-      <div class="orders-grid">
+      <!-- Skeleton -->
+      <div v-if="loading" class="orders-grid">
+        <div v-for="n in 6" :key="n" class="sk sk-big sk-full"></div>
+      </div>
+
+      <div v-else class="orders-grid">
         <div
           v-for="order in filteredOrders"
           :key="order.id"
@@ -424,6 +429,7 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
 const orders = ref([])
+const loading = ref(true)
 const activeFilter = ref('all')
 const selectedOrder = ref(null)
 const paymentMethod = ref('cash')
@@ -486,11 +492,14 @@ const getPaymentStatus = (order) => {
 }
 
 const loadData = async () => {
+  loading.value = true
   try {
     const response = await api.get('/orders')
     orders.value = response.data.data || response.data
   } catch (error) {
     console.error('Erreur chargement commandes', error)
+  } finally {
+    loading.value = false
   }
 }
 

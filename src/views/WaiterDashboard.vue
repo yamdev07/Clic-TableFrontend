@@ -76,7 +76,12 @@
         Aucune table configurée
       </div>
 
-      <div class="tables-grid">
+      <!-- Skeleton grille -->
+      <div v-if="loading" class="tables-grid">
+        <div v-for="n in 8" :key="n" class="sk" style="height:90px;border-radius:14px;"></div>
+      </div>
+
+      <div v-else class="tables-grid">
         <div
           v-for="table in tables"
           :key="table.id"

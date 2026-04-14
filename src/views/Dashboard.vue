@@ -17,8 +17,17 @@
       </div>
     </div>
 
+    <!-- Skeleton chargement -->
+    <div v-if="loading" class="kpi-grid">
+      <div v-for="n in 4" :key="n" class="sk sk-kpi sk-full"></div>
+    </div>
+    <div v-if="loading" style="margin-top:24px; display:flex; flex-direction:column; gap:10px;">
+      <div class="sk sk-title sk-md"></div>
+      <div v-for="n in 5" :key="n" class="sk sk-row sk-full"></div>
+    </div>
+
     <!-- KPI strip -->
-    <div class="kpi-grid">
+    <div v-if="!loading" class="kpi-grid">
       <div class="kpi-card kpi-tables">
         <div class="kpi-top">
           <div class="kpi-icon">
@@ -74,7 +83,7 @@
     </div>
 
     <!-- Quick actions -->
-    <div class="section-header">
+    <div v-if="!loading" class="section-header">
       <h2 class="section-title">Accès rapide</h2>
     </div>
     <div class="actions-grid">
@@ -163,7 +172,7 @@
     </div>
 
     <!-- Recent orders -->
-    <div class="section-header">
+    <div v-if="!loading" class="section-header">
       <h2 class="section-title">Commandes récentes</h2>
     </div>
     <div class="table-wrap">
@@ -205,6 +214,7 @@ import api from '@/services/api'
 
 const authStore = useAuthStore()
 
+const loading = ref(true)
 const stats = ref({
   tables: 0,
   occupiedTables: 0,
@@ -226,14 +236,17 @@ const dateLabel = computed(() => {
 })
 
 const loadStats = async () => {
+  loading.value = true
   try {
-    const tables = await api.get('/tables')
-    stats.value.tables = tables.data.length
-    stats.value.occupiedTables = tables.data.filter(t => t.status === 'occupied').length
+    const [tablesRes, ordersRes] = await Promise.all([
+      api.get('/tables'),
+      api.get('/orders'),
+    ])
 
-    const orders = await api.get('/orders')
-    const allOrders = orders.data.data || orders.data
+    stats.value.tables = tablesRes.data.length
+    stats.value.occupiedTables = tablesRes.data.filter(t => t.status === 'occupied').length
 
+    const allOrders = ordersRes.data.data || ordersRes.data
     stats.value.activeOrders = allOrders.filter(o => !['paid', 'cancelled'].includes(o.status)).length
 
     const today = new Date().toISOString().split('T')[0]
@@ -244,6 +257,8 @@ const loadStats = async () => {
     recentOrders.value = allOrders.slice(0, 10)
   } catch (error) {
     console.error('Erreur chargement stats', error)
+  } finally {
+    loading.value = false
   }
 }
 

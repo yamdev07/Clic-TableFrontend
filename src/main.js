@@ -4,6 +4,7 @@ import { Toaster } from 'vue-sonner'
 
 import App from './App.vue'
 import router from './router'
+import './assets/skeleton.css'
 
 const app = createApp(App)
 

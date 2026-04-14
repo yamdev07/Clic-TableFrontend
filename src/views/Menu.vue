@@ -10,8 +10,22 @@
       </button>
     </div>
 
+    <!-- Skeleton -->
+    <template v-if="loading">
+      <div class="categories-section">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div v-for="n in 5" :key="n" class="sk sk-chip" :style="`width:${70+n*15}px`"></div>
+        </div>
+      </div>
+      <div class="items-section">
+        <div class="items-grid">
+          <div v-for="n in 8" :key="n" class="sk sk-big sk-full"></div>
+        </div>
+      </div>
+    </template>
+
     <!-- Catégories -->
-    <div class="categories-section">
+    <div v-if="!loading" class="categories-section">
       <div class="categories-header">
         <h2>Catégories</h2>
       </div>
@@ -40,7 +54,7 @@
     </div>
 
     <!-- Menu Items -->
-    <div class="items-section">
+    <div v-if="!loading" class="items-section">
       <div class="items-header">
         <h2>Plats</h2>
         <div class="search-bar">
@@ -114,6 +128,8 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 
+const loading = ref(true)
+
 // Menu data
 const categories = ref([])
 const items = ref([])
@@ -146,6 +162,7 @@ const getItemCount = (categoryId) => {
 }
 
 const loadData = async () => {
+  loading.value = true
   try {
     const res = await api.get('/menu')
     categories.value = res.data
@@ -159,6 +176,8 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('Erreur chargement menu', error)
+  } finally {
+    loading.value = false
   }
 }
 

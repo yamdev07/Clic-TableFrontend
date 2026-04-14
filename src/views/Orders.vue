@@ -68,8 +68,16 @@
         </div>
       </div>
 
+      <!-- ── LOADING SKELETON ── -->
+      <div v-if="loading" class="skeleton-board">
+        <div v-for="n in 4" :key="n" class="skeleton-col">
+          <div class="sk-header"></div>
+          <div v-for="m in 2" :key="m" class="sk-card"></div>
+        </div>
+      </div>
+
       <!-- ── KANBAN VIEW ── -->
-      <div v-if="view === 'kanban'" class="kanban-board">
+      <div v-else-if="view === 'kanban'" class="kanban-board">
         <div v-for="col in kanbanCols" :key="col.status" class="kanban-col">
           <div class="col-header">
             <div class="col-title-row">
@@ -119,7 +127,7 @@
       </div>
 
       <!-- ── LIST VIEW ── -->
-      <div v-if="view === 'list'" class="table-wrap">
+      <div v-else-if="view === 'list'" class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
@@ -311,15 +319,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
-
-const router = useRouter()
-const authStore = useAuthStore()
 
 const orders = ref([])
 const availableTables = ref([])
+const loading = ref(true)
 const view = ref('kanban')
 const search = ref('')
 const activeFilter = ref('all')
@@ -399,11 +403,16 @@ const getNextStatuses = (status) => nextStatusMap[status] || []
 const getAllNextStatuses = (status) => nextStatusMap[status] || []
 
 const loadOrders = async () => {
+  loading.value = true
   try {
     const res = await api.get('/orders')
     orders.value = res.data.data || res.data
     lastRefresh.value = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-  } catch (e) { console.error('Erreur commandes', e) }
+  } catch (e) {
+    console.error('Erreur commandes', e)
+  } finally {
+    loading.value = false
+  }
 }
 
 const loadTables = async () => {
@@ -461,11 +470,6 @@ const getStatusLabel = (s) => ({
   open: 'Ouverte', in_progress: 'En préparation', ready: 'Prête',
   served: 'Servie', paid: 'Payée', cancelled: 'Annulée',
 }[s] || s)
-
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
-}
 
 onMounted(() => {
   loadOrders()
@@ -1029,5 +1033,40 @@ onBeforeUnmount(() => clearInterval(interval))
 @media (max-width: 820px) {
   .main { padding: 20px 16px; }
   .modal-meta { grid-template-columns: 1fr 1fr; }
+}
+/* ── Loading skeleton ── */
+.skeleton-board {
+  display: flex;
+  gap: 16px;
+  padding: 0 0 24px;
+}
+
+.skeleton-col {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sk-header {
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e4e4ec 25%, #f0f0f7 50%, #e4e4ec 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.sk-card {
+  height: 100px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #e4e4ec 25%, #f0f0f7 50%, #e4e4ec 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>

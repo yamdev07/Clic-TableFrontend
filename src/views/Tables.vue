@@ -41,8 +41,13 @@
         </div>
       </div>
 
+      <!-- Skeleton chargement -->
+      <div v-if="loading" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;padding:24px;">
+        <div v-for="n in 10" :key="n" class="sk" style="height:100px;border-radius:12px;"></div>
+      </div>
+
       <!-- Floor plan -->
-      <div class="floor-wrap">
+      <div v-else class="floor-wrap">
         <!-- Légende statut -->
         <div class="floor-legend">
           <div class="legend-item"><span class="ldot free"></span>Libre</div>
@@ -299,6 +304,7 @@ export default {
     const savedComptoir = JSON.parse(localStorage.getItem('comptoir_position') || 'null')
     return {
       tables: [],
+      loading: true,
       selectedTable: null,
       dragMode: false,
       draggingTable: null,
@@ -356,11 +362,14 @@ export default {
   },
   methods: {
     async loadTables() {
+      this.loading = true
       try {
         const response = await api.get('/tables')
         this.tables = response.data
       } catch (error) {
         console.error('Erreur chargement tables', error)
+      } finally {
+        this.loading = false
       }
     },
     toggleDragMode() {
