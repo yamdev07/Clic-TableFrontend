@@ -76,7 +76,12 @@
         Aucune table configurée
       </div>
 
-      <div class="tables-grid">
+      <!-- Skeleton grille -->
+      <div v-if="loading" class="tables-grid">
+        <div v-for="n in 8" :key="n" class="sk" style="height:90px;border-radius:14px;"></div>
+      </div>
+
+      <div v-else class="tables-grid">
         <div
           v-for="table in tables"
           :key="table.id"
@@ -475,7 +480,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 .waiter-space {
   min-height: 100vh;

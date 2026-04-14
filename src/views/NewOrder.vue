@@ -34,7 +34,12 @@
           </button>
         </div>
 
-        <div class="items-grid">
+        <!-- Skeleton menu -->
+        <div v-if="loadingMenu" class="items-grid">
+          <div v-for="n in 8" :key="n" class="sk sk-card sk-full"></div>
+        </div>
+
+        <div v-else class="items-grid">
           <div
             v-for="item in filteredItems"
             :key="item.id"
@@ -155,6 +160,7 @@ export default {
     const allItems = ref([])
     const cart = ref([])
     const selectedCategory = ref(null)
+    const loadingMenu = ref(true)
 
     const filteredItems = computed(() => {
       if (!selectedCategory.value) return []
@@ -193,6 +199,7 @@ export default {
     }
 
     const loadMenu = async () => {
+      loadingMenu.value = true
       try {
         const res = await api.get('/menu')
         categories.value = res.data
@@ -200,10 +207,7 @@ export default {
         for (const cat of categories.value) {
           if (cat.menu_items) {
             for (const item of cat.menu_items) {
-              allItems.value.push({
-                ...item,
-                category_id: cat.id
-              })
+              allItems.value.push({ ...item, category_id: cat.id })
             }
           }
         }
@@ -212,6 +216,8 @@ export default {
         }
       } catch (error) {
         console.error('Erreur chargement menu:', error)
+      } finally {
+        loadingMenu.value = false
       }
     }
 
@@ -318,6 +324,7 @@ export default {
       allItems,
       cart,
       selectedCategory,
+      loadingMenu,
       filteredItems,
       subtotal,
       tax,
@@ -336,7 +343,6 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
 
 .new-order-page {
   min-height: 100vh;

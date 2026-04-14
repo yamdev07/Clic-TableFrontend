@@ -17,8 +17,17 @@
       </div>
     </div>
 
+    <!-- Skeleton chargement -->
+    <div v-if="loading" class="kpi-grid">
+      <div v-for="n in 4" :key="n" class="sk sk-kpi sk-full"></div>
+    </div>
+    <div v-if="loading" style="margin-top:24px; display:flex; flex-direction:column; gap:10px;">
+      <div class="sk sk-title sk-md"></div>
+      <div v-for="n in 5" :key="n" class="sk sk-row sk-full"></div>
+    </div>
+
     <!-- KPI strip -->
-    <div class="kpi-grid">
+    <div v-if="!loading" class="kpi-grid">
       <div class="kpi-card kpi-tables">
         <div class="kpi-top">
           <div class="kpi-icon">
@@ -74,7 +83,7 @@
     </div>
 
     <!-- Quick actions -->
-    <div class="section-header">
+    <div v-if="!loading" class="section-header">
       <h2 class="section-title">Accès rapide</h2>
     </div>
     <div class="actions-grid">
@@ -163,7 +172,7 @@
     </div>
 
     <!-- Recent orders -->
-    <div class="section-header">
+    <div v-if="!loading" class="section-header">
       <h2 class="section-title">Commandes récentes</h2>
     </div>
     <div class="table-wrap">
@@ -205,6 +214,7 @@ import api from '@/services/api'
 
 const authStore = useAuthStore()
 
+const loading = ref(true)
 const stats = ref({
   tables: 0,
   occupiedTables: 0,
@@ -226,24 +236,20 @@ const dateLabel = computed(() => {
 })
 
 const loadStats = async () => {
+  loading.value = true
   try {
-    const tables = await api.get('/tables')
-    stats.value.tables = tables.data.length
-    stats.value.occupiedTables = tables.data.filter(t => t.status === 'occupied').length
+    // 2 appels parallèles : /stats (caché 15 s) + /orders paginé pour les recents
+    const [statsRes, ordersRes] = await Promise.all([
+      api.get('/stats'),
+      api.get('/orders?per_page=10'),
+    ])
 
-    const orders = await api.get('/orders')
-    const allOrders = orders.data.data || orders.data
-
-    stats.value.activeOrders = allOrders.filter(o => !['paid', 'cancelled'].includes(o.status)).length
-
-    const today = new Date().toISOString().split('T')[0]
-    const todayList = allOrders.filter(o => o.created_at?.split('T')[0] === today)
-    stats.value.todayOrders = todayList.length
-    stats.value.todayRevenue = todayList.reduce((sum, o) => sum + (o.total || 0), 0)
-
-    recentOrders.value = allOrders.slice(0, 10)
+    Object.assign(stats.value, statsRes.data)
+    recentOrders.value = ordersRes.data.data || ordersRes.data
   } catch (error) {
     console.error('Erreur chargement stats', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -277,7 +283,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 .dashboard {
   min-height: 100vh;

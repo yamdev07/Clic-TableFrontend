@@ -1,0 +1,43 @@
+/* ── Skeleton / shimmer global ───────────────────────────────────────────────
+   Usage : <div class="sk sk-text"></div>
+           <div class="sk sk-card"></div>  etc.
+   Sizes : sk-xs / sk-sm / sk-md / sk-lg / sk-xl / sk-full
+   Shapes: sk-circle
+---------------------------------------------------------------------------- */
+
+@keyframes sk-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.sk {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e4e4ec 25%, #f0f0f7 50%, #e4e4ec 75%);
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.4s infinite;
+  display: block;
+}
+
+/* heights */
+.sk-text  { height: 14px; }
+.sk-title { height: 20px; }
+.sk-card  { height: 80px;  border-radius: 12px; }
+.sk-btn   { height: 36px;  border-radius: 8px;  }
+.sk-row   { height: 48px;  border-radius: 8px;  }
+.sk-chip  { height: 32px;  border-radius: 20px; }
+.sk-kpi   { height: 90px;  border-radius: 14px; }
+.sk-big   { height: 120px; border-radius: 12px; }
+
+/* widths */
+.sk-xs   { width: 60px;  }
+.sk-sm   { width: 100px; }
+.sk-md   { width: 160px; }
+.sk-lg   { width: 220px; }
+.sk-xl   { width: 300px; }
+.sk-full { width: 100%;  }
+
+/* shape */
+.sk-circle { border-radius: 50%; }
+
+/* spacing helper */
+.sk + .sk { margin-top: 10px; }

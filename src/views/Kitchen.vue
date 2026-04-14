@@ -13,7 +13,15 @@
       </div>
     </header>
 
-    <div class="kitchen-grid">
+    <!-- Skeleton -->
+    <div v-if="loading" class="kitchen-grid">
+      <div v-for="col in 3" :key="col" class="kitchen-column">
+        <div class="sk sk-btn sk-full" style="margin-bottom:12px"></div>
+        <div v-for="n in 3" :key="n" class="sk sk-big sk-full" style="margin-bottom:10px"></div>
+      </div>
+    </div>
+
+    <div v-else class="kitchen-grid">
       <!-- Commandes en attente -->
       <div class="kitchen-column">
         <div class="column-header pending">
@@ -113,6 +121,7 @@ const authStore = useAuthStore()
 const { subscribeKitchen, disconnect: disconnectEcho } = useEcho()
 
 const allItems = ref([])
+const loading  = ref(true)
 
 const pendingItems = computed(() => allItems.value.filter(i => i.kitchen_status === 'pending'))
 const cookingItems = computed(() => allItems.value.filter(i => i.kitchen_status === 'cooking'))
@@ -156,11 +165,14 @@ const formatTime = (date) => {
 }
 
 async function loadOrders() {
+  loading.value = true
   try {
     const response = await api.get('/kitchen/pending')
     allItems.value = response.data
   } catch (error) {
     console.error('Erreur chargement cuisine', error)
+  } finally {
+    loading.value = false
   }
 }
 

@@ -10,30 +10,51 @@
       </button>
     </div>
 
+    <!-- Skeleton -->
+    <template v-if="loading">
+      <div class="categories-section">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div v-for="n in 5" :key="n" class="sk sk-chip" :style="`width:${70+n*15}px`"></div>
+        </div>
+      </div>
+      <div class="items-section">
+        <div class="items-grid">
+          <div v-for="n in 8" :key="n" class="sk sk-big sk-full"></div>
+        </div>
+      </div>
+    </template>
+
     <!-- Catégories -->
-    <div class="categories-section">
+    <div v-if="!loading" class="categories-section">
       <div class="categories-header">
         <h2>Catégories</h2>
-        <button @click="openCategoryModal" class="btn-outline">
-          + Ajouter une catégorie
-        </button>
       </div>
       <div class="categories-list">
-        <button
+        <div
           v-for="cat in categories"
           :key="cat.id"
-          @click="selectedCategory = cat.id"
+          class="category-chip-wrap"
           :class="{ active: selectedCategory === cat.id }"
-          class="category-chip"
         >
-          {{ cat.name }}
-          <span class="category-count">{{ getItemCount(cat.id) }}</span>
-        </button>
+          <button
+            @click="selectedCategory = cat.id"
+            class="category-chip"
+            :class="{ active: selectedCategory === cat.id }"
+          >
+            {{ cat.name }}
+            <span class="category-count">{{ getItemCount(cat.id) }}</span>
+          </button>
+          <button
+            @click.stop="openCategoryModal(cat)"
+            class="chip-edit-btn"
+            title="Renommer"
+          >✏️</button>
+        </div>
       </div>
     </div>
 
     <!-- Menu Items -->
-    <div class="items-section">
+    <div v-if="!loading" class="items-section">
       <div class="items-header">
         <h2>Plats</h2>
         <div class="search-bar">
@@ -73,7 +94,7 @@
     <!-- Modal Catégorie -->
     <div v-if="categoryModal" class="modal" @click.self="closeModals">
       <div class="modal-content">
-        <h2>{{ editingCategory ? 'Modifier' : 'Nouvelle' }} catégorie</h2>
+        <h2>Renommer la catégorie</h2>
         <input type="text" v-model="categoryForm.name" placeholder="Nom de la catégorie" />
         <div class="modal-actions">
           <button @click="saveCategory" class="btn-primary">Enregistrer</button>
@@ -105,12 +126,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
-const router = useRouter()
-const authStore = useAuthStore()
+const loading = ref(true)
 
 // Menu data
 const categories = ref([])
@@ -144,6 +162,7 @@ const getItemCount = (categoryId) => {
 }
 
 const loadData = async () => {
+  loading.value = true
   try {
     const res = await api.get('/menu')
     categories.value = res.data
@@ -157,6 +176,8 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('Erreur chargement menu', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -233,18 +254,12 @@ const deleteItem = async (id) => {
   }
 }
 
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
-}
-
 onMounted(() => {
   loadData()
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
 
 .menu-layout {
   min-height: 100vh;
@@ -343,6 +358,12 @@ onMounted(() => {
   gap: 10px;
 }
 
+.category-chip-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .category-chip {
   background: #f4f4f6;
   border: none;
@@ -359,6 +380,21 @@ onMounted(() => {
 .category-chip.active {
   background: #7c3aed;
   color: white;
+}
+
+.chip-edit-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 12px;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.category-chip-wrap:hover .chip-edit-btn {
+  opacity: 1;
 }
 
 .category-count {
