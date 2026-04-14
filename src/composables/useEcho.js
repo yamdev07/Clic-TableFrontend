@@ -1,99 +1,103 @@
 /**
- * useEcho — composable pour Laravel Echo + Reverb (WebSocket)
+ * useEcho — composable Laravel Echo + Reverb (WebSocket)
  *
- * Usage :
- *   const { subscribeKitchen, subscribeRestaurant, disconnect } = useEcho()
- *
- *   // Dans onMounted :
- *   subscribeKitchen(restaurantId, {
- *     'item.status.changed': (data) => handleItemUpdate(data),
- *     'order.received':      (data) => handleNewOrder(data),
- *   })
- *
- *   // Dans onBeforeUnmount :
- *   disconnect()
+ * Import dynamique : si laravel-echo / pusher-js ne sont pas installés
+ * (npm install pas encore fait), l'app continue de fonctionner normalement
+ * avec le polling comme seul mécanisme de refresh.
  */
 
-import Echo from 'laravel-echo'
-import Pusher from 'pusher-js'
 import { ref } from 'vue'
 
-// Singleton Echo — une seule connexion WS pour toute l'app
 let echoInstance = null
 
-function getEcho() {
+async function getEcho() {
   if (echoInstance) return echoInstance
 
-  window.Pusher = Pusher
+  try {
+    const [{ default: Echo }, { default: Pusher }] = await Promise.all([
+      import('laravel-echo'),
+      import('pusher-js'),
+    ])
 
-  echoInstance = new Echo({
-    broadcaster: 'reverb',
-    key:         import.meta.env.VITE_REVERB_APP_KEY    ?? 'clicettable-key',
-    wsHost:      import.meta.env.VITE_REVERB_HOST       ?? 'localhost',
-    wsPort:      import.meta.env.VITE_REVERB_PORT       ?? 8080,
-    wssPort:     import.meta.env.VITE_REVERB_PORT       ?? 8080,
-    forceTLS:   (import.meta.env.VITE_REVERB_SCHEME     ?? 'http') === 'https',
-    enabledTransports: ['ws', 'wss'],
-    // Authentification via le cookie/token Sanctum
-    authEndpoint: (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api')
-      + '/broadcasting/auth',
-    auth: {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+    window.Pusher = Pusher
+
+    echoInstance = new Echo({
+      broadcaster: 'reverb',
+      key:         import.meta.env.VITE_REVERB_APP_KEY  ?? 'clicettable-key',
+      wsHost:      import.meta.env.VITE_REVERB_HOST     ?? 'localhost',
+      wsPort:      Number(import.meta.env.VITE_REVERB_PORT  ?? 8080),
+      wssPort:     Number(import.meta.env.VITE_REVERB_PORT  ?? 8080),
+      forceTLS:   (import.meta.env.VITE_REVERB_SCHEME   ?? 'http') === 'https',
+      enabledTransports: ['ws', 'wss'],
+      // Désactiver les retries automatiques de Pusher
+      activityTimeout:  30000,
+      pongTimeout:      10000,
+      authEndpoint: (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api')
+        + '/broadcasting/auth',
+      auth: {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+        },
       },
-    },
-  })
+    })
 
-  return echoInstance
+    // Si Reverb est indisponible : log propre, pas de spam
+    const pusher = echoInstance.connector.pusher
+    pusher.connection.bind('unavailable', () => {
+      console.warn('[WebSocket] Reverb indisponible — polling actif. Démarrez : php artisan reverb:start')
+      pusher.disconnect()
+      echoInstance = null
+    })
+    pusher.connection.bind('failed', () => {
+      console.warn('[WebSocket] Connexion Reverb échouée — polling actif.')
+      pusher.disconnect()
+      echoInstance = null
+    })
+
+    return echoInstance
+  } catch (err) {
+    console.warn(
+      '[useEcho] Laravel Echo non disponible — polling actif comme fallback.\n' +
+      'Exécutez : npm install',
+      err.message,
+    )
+    return null
+  }
 }
 
 export function useEcho() {
   const connected = ref(false)
-  const channels  = []
+  const subscriptions = []
 
-  /**
-   * S'abonner aux événements cuisine d'un restaurant.
-   * @param {string} restaurantId
-   * @param {Object} listeners  { 'event.name': handler }
-   */
-  function subscribeKitchen(restaurantId, listeners) {
-    const echo    = getEcho()
+  async function subscribeKitchen(restaurantId, listeners) {
+    const echo = await getEcho()
+    if (!echo) return null
+
     const channel = echo.private(`kitchen.${restaurantId}`)
-
     for (const [event, handler] of Object.entries(listeners)) {
       channel.listen(`.${event}`, handler)
     }
-
-    channels.push(channel)
+    subscriptions.push(channel)
     connected.value = true
     return channel
   }
 
-  /**
-   * S'abonner aux événements globaux du restaurant (commandes, paiements…).
-   * @param {string} restaurantId
-   * @param {Object} listeners  { 'event.name': handler }
-   */
-  function subscribeRestaurant(restaurantId, listeners) {
-    const echo    = getEcho()
+  async function subscribeRestaurant(restaurantId, listeners) {
+    const echo = await getEcho()
+    if (!echo) return null
+
     const channel = echo.private(`restaurant.${restaurantId}`)
-
     for (const [event, handler] of Object.entries(listeners)) {
       channel.listen(`.${event}`, handler)
     }
-
-    channels.push(channel)
+    subscriptions.push(channel)
     connected.value = true
     return channel
   }
 
-  /**
-   * Se désabonner de tous les canaux ouverts par ce composable.
-   * Appeler dans onBeforeUnmount.
-   */
   function disconnect() {
-    channels.forEach(channel => channel.unsubscribe?.())
-    channels.length = 0
+    subscriptions.forEach(ch => ch.unsubscribe?.())
+    subscriptions.length = 0
     connected.value = false
   }
 
