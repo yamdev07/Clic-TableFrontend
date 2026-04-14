@@ -94,7 +94,7 @@
             v-for="table in tables"
             :key="table.id"
             class="table-item"
-            :class="[table.status, { dragging: draggingTable === table.id, 'drag-mode': dragMode }]"
+            :class="[table.status, { dragging: draggingTable === table.id, 'drag-mode': dragMode, 'drag-collision': draggingTable === table.id && table._collision }]"
             :style="{ left: table.x_position + 'px', top: table.y_position + 'px' }"
             @mousedown="startDrag($event, table)"
             @click="!dragMode && selectTable(table)"
@@ -310,6 +310,8 @@ export default {
       draggingTable: null,
       dragStartX: 0,
       dragStartY: 0,
+      dragOriginalX: 0,
+      dragOriginalY: 0,
       // Comptoir
       comptoir: savedComptoir || { x: 40, y: 520 },
       draggingComptoir: false,
@@ -339,6 +341,10 @@ export default {
   watch: {
     'configForm.tableCount'(newVal) {
       const target = Math.max(1, Math.min(50, parseInt(newVal) || 1))
+      if (this.configForm.tableCount !== target) {
+        this.configForm.tableCount = target
+        return // the watcher will re-trigger with the clamped value
+      }
       const current = this.configForm.tables.length
       if (target > current) {
         for (let i = current; i < target; i++) {
@@ -419,6 +425,8 @@ export default {
       this.draggingTable = table.id
       this.dragStartX = event.clientX - table.x_position
       this.dragStartY = event.clientY - table.y_position
+      this.dragOriginalX = table.x_position
+      this.dragOriginalY = table.y_position
     },
     onDrag(event) {
       // Drag comptoir
@@ -433,6 +441,7 @@ export default {
       if (!table) return
       table.x_position = Math.max(0, Math.min(event.clientX - this.dragStartX, 1000))
       table.y_position = Math.max(0, Math.min(event.clientY - this.dragStartY, 700))
+      table._collision = this.hasCollision(table)
     },
     async stopDrag() {
       // Stop comptoir drag — sauvegarder position en localStorage
@@ -444,6 +453,14 @@ export default {
       if (!this.draggingTable) return
       const table = this.tables.find(t => t.id === this.draggingTable)
       if (table) {
+        table._collision = false
+        if (this.hasCollision(table)) {
+          // Snap back to original position — no save
+          table.x_position = this.dragOriginalX
+          table.y_position = this.dragOriginalY
+          this.draggingTable = null
+          return
+        }
         try {
           await api.put(`/tables/${table.id}`, {
             x_position: table.x_position,
@@ -454,6 +471,19 @@ export default {
         }
       }
       this.draggingTable = null
+    },
+
+    hasCollision(movingTable) {
+      const SIZE = 110
+      const MARGIN = 8 // minimum gap between tables
+      const step = SIZE + MARGIN
+      for (const other of this.tables) {
+        if (other.id === movingTable.id) continue
+        const dx = Math.abs(movingTable.x_position - other.x_position)
+        const dy = Math.abs(movingTable.y_position - other.y_position)
+        if (dx < step && dy < step) return true
+      }
+      return false
     },
 
     // ── Comptoir drag ──
@@ -485,9 +515,13 @@ export default {
       this.configForm.tables.forEach(t => { t.capacity = this.configForm.defaultCapacity })
     },
     async applyConfig() {
+      const target = Math.max(1, Math.min(50, parseInt(this.configForm.tableCount) || 1))
+      if (target !== this.configForm.tableCount) {
+        this.configForm.tableCount = target
+        return
+      }
       this.configLoading = true
       try {
-        const target = this.configForm.tableCount
         const sorted = [...this.tables].sort((a, b) => a.number - b.number)
 
         // Supprimer les tables en excès (seulement si libres)
@@ -701,6 +735,7 @@ export default {
 .table-item.reserved { filter: drop-shadow(0 0 14px rgba(255, 204,  0,  0.25)); }
 .table-item.dirty    { filter: drop-shadow(0 0 14px rgba(77, 166, 255, 0.25)); }
 .table-item.dragging { filter: brightness(1.2) drop-shadow(0 8px 24px rgba(0,0,0,0.7)) !important; }
+.table-item.drag-collision { filter: brightness(1.1) drop-shadow(0 0 18px rgba(255, 60, 60, 0.9)) !important; }
 
 /* Légère élévation au survol */
 .table-item:not(.drag-mode):hover .table-surface {
