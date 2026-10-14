@@ -112,7 +112,12 @@
           </button>
         </form>
 
-        <div class="demo-section">
+        <p class="signup-link">
+          Nouveau sur Clic&amp;Table ?
+          <router-link to="/register">Créer mon restaurant</router-link>
+        </p>
+
+        <div v-if="isDev" class="demo-section">
           <div class="demo-label">
             <div class="demo-line"></div>
             <span>Comptes de démonstration</span>
@@ -153,8 +158,11 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const email = ref('admin@clicettable.com')
-const password = ref('password123')
+// Comptes de démonstration (seeder) : uniquement en développement
+const isDev = import.meta.env.DEV
+
+const email = ref(isDev ? 'admin@clicettable.com' : '')
+const password = ref(isDev ? 'password123' : '')
 const error = ref('')
 const showPassword = ref(false)
 
@@ -192,7 +200,7 @@ const handleLogin = async () => {
   error.value = ''
   const result = await authStore.login(email.value, password.value)
   if (result.success) {
-    router.push('/')
+    router.push(authStore.homeRoute)
   } else {
     error.value = result.message
   }
@@ -510,6 +518,21 @@ const handleLogin = async () => {
 @keyframes dot-bounce {
   0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
   40% { transform: scale(1); opacity: 1; }
+}
+
+.signup-link {
+  font-size: 13px;
+  color: #6b6b7b;
+  text-align: center;
+  margin: -12px 0 24px;
+}
+.signup-link a {
+  color: #7c3aed;
+  font-weight: 600;
+  text-decoration: none;
+}
+.signup-link a:hover {
+  text-decoration: underline;
 }
 
 /* ── Demo section ── */
