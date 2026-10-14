@@ -170,7 +170,7 @@ async function loadOrders() {
   try {
     const response = await api.get('/kitchen/pending')
     allItems.value = response.data
-  } catch (error) {
+  } catch {
     toast.error('Impossible de charger les commandes en cuisine')
   } finally {
     loading.value = false

@@ -497,7 +497,7 @@ const loadData = async () => {
   try {
     const response = await api.get('/orders')
     orders.value = response.data.data || response.data
-  } catch (error) {
+  } catch {
     toast.error('Impossible de charger les commandes')
   } finally {
     loading.value = false
@@ -543,7 +543,7 @@ const loadZReport = async () => {
   try {
     const res = await api.get(`/stats/z-report?date=${zReportDate.value}`)
     zReport.value = res.data
-  } catch (e) {
+  } catch {
     toast.error('Impossible de charger le rapport Z')
   }
 }
@@ -592,7 +592,7 @@ const viewInvoice = async (order) => {
     const response = await api.get(`/orders/${order.id}`)
     invoiceData.value = response.data
     showInvoiceModal.value = true
-  } catch (error) {
+  } catch {
     toast.error('Impossible de charger la facture')
   }
 }

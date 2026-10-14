@@ -172,7 +172,9 @@ const loadStats = async () => {
   try {
     const res = await api.get('/stats')
     stats.value = res.data
-  } catch {}
+  } catch {
+    // stats non critiques : on garde les dernières valeurs connues
+  }
 }
 
 const logout = () => { authStore.logout(); router.push('/login') }

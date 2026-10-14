@@ -366,21 +366,6 @@ const nextStatusMap = {
   cancelled:   [],
 }
 
-const activeCount = computed(() =>
-  orders.value.filter(o => !['paid', 'cancelled'].includes(o.status)).length
-)
-
-const todayOrders = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
-  return orders.value.filter(o => o.created_at?.split('T')[0] === today)
-})
-
-const todayRevenue = computed(() =>
-  todayOrders.value
-    .filter(o => o.status === 'paid')
-    .reduce((s, o) => s + (o.total || 0), 0)
-)
-
 const filteredOrders = computed(() => {
   let list = orders.value
   if (activeFilter.value !== 'all') list = list.filter(o => o.status === activeFilter.value)
@@ -423,7 +408,7 @@ const loadTables = async () => {
   try {
     const res = await api.get('/tables')
     availableTables.value = res.data.filter(t => t.status === 'free')
-  } catch (e) {
+  } catch {
     toast.error('Impossible de charger les tables')
   }
 }
