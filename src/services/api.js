@@ -28,6 +28,14 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // 403 account_inactive — compte désactivé, restaurant suspendu ou essai expiré
+    if (status === 403 && data?.code === 'account_inactive' && window.location.pathname !== '/login') {
+      localStorage.removeItem('token')
+      toast.error('Accès suspendu', { description: data.message, duration: 6000 })
+      setTimeout(() => { window.location.href = '/login' }, 1500)
+      return Promise.reject(error)
+    }
+
     // 403 — accès refusé
     if (status === 403) {
       toast.error('Accès refusé', {
