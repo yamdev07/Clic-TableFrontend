@@ -208,7 +208,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
 
@@ -276,9 +276,15 @@ const getStatusLabel = (status) => ({
   cancelled: 'Annulé',
 }[status] || status)
 
+let refreshInterval = null
+
 onMounted(() => {
   loadStats()
-  setInterval(loadStats, 30000)
+  refreshInterval = setInterval(loadStats, 30000)
+})
+
+onBeforeUnmount(() => {
+  clearInterval(refreshInterval)
 })
 </script>
 

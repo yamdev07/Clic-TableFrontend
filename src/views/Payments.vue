@@ -425,7 +425,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/services/api'
 import { toast } from '@/composables/useNotif'
 
@@ -749,9 +749,15 @@ const formatDate = (date) => {
   })
 }
 
+let refreshInterval = null
+
 onMounted(() => {
   loadData()
-  setInterval(loadData, 30000)
+  refreshInterval = setInterval(loadData, 30000)
+})
+
+onBeforeUnmount(() => {
+  clearInterval(refreshInterval)
 })
 </script>
 
