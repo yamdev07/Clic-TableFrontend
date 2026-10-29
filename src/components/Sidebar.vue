@@ -320,7 +320,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
@@ -339,21 +339,25 @@ const initials = computed(() =>
     .slice(0, 2),
 )
 
+let statsInterval = null
+
 const loadStats = async () => {
+  if (!authStore.token) return
   try {
     const res = await api.get('/stats')
     stats.value = res.data
   } catch {}
 }
 
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
-}
+const logout = () => { authStore.logout(); router.push('/login') }
 
 onMounted(() => {
   loadStats()
-  setInterval(loadStats, 30000)
+  statsInterval = setInterval(loadStats, 30000)
+})
+
+onBeforeUnmount(() => {
+  clearInterval(statsInterval)
 })
 </script>
 

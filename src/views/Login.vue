@@ -111,6 +111,9 @@
             <span v-else>Continuer</span>
           </button>
         </form>
+        <p class="register-link">
+  Pas encore de compte ? <router-link to="/register">Créer mon restaurant</router-link>
+</p>
 
         <div class="demo-section">
           <div class="demo-label">
@@ -510,6 +513,17 @@ const handleLogin = async () => {
 @keyframes dot-bounce {
   0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
   40% { transform: scale(1); opacity: 1; }
+}
+.register-link {
+  font-size: 13px;
+  color: #6b6b7b;
+  text-align: center;
+  margin: -8px 0 24px;
+}
+.register-link a {
+  color: #7c3aed;
+  font-weight: 500;
+  text-decoration: none;
 }
 
 /* ── Demo section ── */

@@ -78,7 +78,32 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-
+   async register({ restaurantName, name, email, password, passwordConfirmation }) {
+  this.loading = true
+  try {
+    const response = await api.post('/register', {
+      restaurant_name: restaurantName,
+      name,
+      email,
+      password,
+      password_confirmation: passwordConfirmation,
+    })
+    this.token = response.data.token
+    this.user = response.data.user
+    localStorage.setItem('token', response.data.token)
+    return { success: true }
+  } catch (error) {
+    const errors = error.response?.data?.errors
+    return {
+      success: false,
+      message: errors
+        ? Object.values(errors).flat()[0]
+        : error.response?.data?.message || "Erreur lors de l'inscription",
+    }
+  } finally {
+    this.loading = false
+  }
+},
     logout({ remote = true } = {}) {
       const token = this.token
 

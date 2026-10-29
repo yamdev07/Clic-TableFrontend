@@ -187,4 +187,49 @@ describe('Auth Store', () => {
     expect(api.post).not.toHaveBeenCalled()
     expect(store.token).toBeNull()
   })
+  it("register envoie restaurant_name et stocke le token et l'utilisateur", async () => {
+  api.post.mockResolvedValueOnce({
+    data: {
+      token: 'tok-new',
+      user: {
+        id: '9', name: 'Awa', role: 'admin', restaurant_id: 'r9',
+        restaurant: { id: 'r9', name: 'Chez Awa' },
+      },
+    },
+  })
+
+  const store = useAuthStore()
+  const result = await store.register({
+    restaurantName: 'Chez Awa', name: 'Awa', email: 'awa@test.com', password: 'secret123',
+  })
+
+  expect(api.post).toHaveBeenCalledWith('/register', {
+    restaurant_name: 'Chez Awa', name: 'Awa', email: 'awa@test.com', password: 'secret123',
+  })
+  expect(result.success).toBe(true)
+  expect(store.isAdmin).toBe(true)
+  expect(store.restaurantName).toBe('Chez Awa')
+  expect(localStorage.getItem('token')).toBe('tok-new')
+})
+
+it('register échoué retourne le premier message de validation', async () => {
+  api.post.mockRejectedValueOnce({
+    response: { data: { errors: { email: ['Cet email est déjà utilisé.'] } } },
+  })
+
+  const store = useAuthStore()
+  const result = await store.register({
+  restaurantName: 'Chez Awa', name: 'Awa', email: 'awa@test.com',
+  password: 'Secret123', passwordConfirmation: 'Secret123',
+})
+
+expect(api.post).toHaveBeenCalledWith('/register', {
+  restaurant_name: 'Chez Awa', name: 'Awa', email: 'awa@test.com',
+  password: 'Secret123', password_confirmation: 'Secret123',
+})
+
+  expect(result.success).toBe(false)
+  expect(result.message).toBe('Cet email est déjà utilisé.')
+  expect(store.token).toBeNull()
+})
 })

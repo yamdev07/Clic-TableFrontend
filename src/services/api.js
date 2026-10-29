@@ -21,7 +21,7 @@ api.interceptors.response.use(
     const data    = error.response?.data
 
     // 401 — session expirée
-    if (status === 401 && window.location.pathname !== '/login') {
+if (status === 401 && !['/login', '/register'].includes(window.location.pathname)) {
       localStorage.removeItem('token')
       toast.error('Session expirée', { description: 'Veuillez vous reconnecter.' })
       window.location.href = '/login'

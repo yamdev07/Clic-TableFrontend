@@ -27,7 +27,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const navLoader = useNavLoader()
 
-const showSidebar = computed(() => route.path !== '/login')
+const showSidebar = computed(() => !['/login', '/register'].includes(route.path))
 
 if (authStore.token && !authStore.user) {
   authStore.fetchMe()
