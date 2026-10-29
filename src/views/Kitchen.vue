@@ -16,8 +16,8 @@
     <!-- Skeleton -->
     <div v-if="loading" class="kitchen-grid">
       <div v-for="col in 3" :key="col" class="kitchen-column">
-        <div class="sk sk-btn sk-full" style="margin-bottom:12px"></div>
-        <div v-for="n in 3" :key="n" class="sk sk-big sk-full" style="margin-bottom:10px"></div>
+        <div class="sk sk-btn sk-full" style="margin-bottom: 12px"></div>
+        <div v-for="n in 3" :key="n" class="sk sk-big sk-full" style="margin-bottom: 10px"></div>
       </div>
     </div>
 
@@ -38,14 +38,22 @@
               <div class="item-name">{{ item.item_name }}</div>
               <div class="item-details">
                 <span class="quantity">x{{ item.quantity }}</span>
-                <span v-if="item.special_instructions" class="notes">📝 {{ item.special_instructions }}</span>
+                <span v-if="item.special_instructions" class="notes"
+                  >📝 {{ item.special_instructions }}</span
+                >
               </div>
             </div>
             <div class="card-footer">
               <span class="time">{{ formatTime(item.created_at) }}</span>
               <div class="card-actions">
                 <button @click="startCooking(item)" class="action-btn start">Commencer</button>
-                <button @click="confirmRupture(item)" class="action-btn rupture" title="Signaler rupture de stock">🚫</button>
+                <button
+                  @click="confirmRupture(item)"
+                  class="action-btn rupture"
+                  title="Signaler rupture de stock"
+                >
+                  🚫
+                </button>
               </div>
             </div>
           </div>
@@ -69,7 +77,9 @@
               <div class="item-name">{{ item.item_name }}</div>
               <div class="item-details">
                 <span class="quantity">x{{ item.quantity }}</span>
-                <span v-if="item.special_instructions" class="notes">📝 {{ item.special_instructions }}</span>
+                <span v-if="item.special_instructions" class="notes"
+                  >📝 {{ item.special_instructions }}</span
+                >
               </div>
             </div>
             <div class="card-footer">
@@ -112,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { useEcho } from '@/composables/useEcho'
@@ -122,17 +132,17 @@ const authStore = useAuthStore()
 const { subscribeKitchen, disconnect: disconnectEcho } = useEcho()
 
 const allItems = ref([])
-const loading  = ref(true)
+const loading = ref(true)
 
-const pendingItems = computed(() => allItems.value.filter(i => i.kitchen_status === 'pending'))
-const cookingItems = computed(() => allItems.value.filter(i => i.kitchen_status === 'cooking'))
-const readyItems   = computed(() => allItems.value.filter(i => i.kitchen_status === 'ready'))
+const pendingItems = computed(() => allItems.value.filter((i) => i.kitchen_status === 'pending'))
+const cookingItems = computed(() => allItems.value.filter((i) => i.kitchen_status === 'cooking'))
+const readyItems = computed(() => allItems.value.filter((i) => i.kitchen_status === 'ready'))
 
 let refreshInterval = null
 
 // ── WebSocket handler ─────────────────────────────────────────────────────────
 function handleItemStatusChanged(data) {
-  const idx = allItems.value.findIndex(i => i.id === data.id)
+  const idx = allItems.value.findIndex((i) => i.id === data.id)
   if (idx !== -1) {
     if (data.kitchen_status === 'served') {
       allItems.value.splice(idx, 1)
@@ -144,16 +154,16 @@ function handleItemStatusChanged(data) {
 
 function handleNewOrder(data) {
   // Nouvelle commande envoyée en cuisine : ajoute les items en attente
-  const newItems = (data.items || []).map(item => ({
+  const newItems = (data.items || []).map((item) => ({
     ...item,
     order: {
-      id:           data.id,
+      id: data.id,
       order_number: data.order_number,
-      table:        data.table,
+      table: data.table,
     },
   }))
-  newItems.forEach(item => {
-    if (!allItems.value.some(i => i.id === item.id)) {
+  newItems.forEach((item) => {
+    if (!allItems.value.some((i) => i.id === item.id)) {
       allItems.value.push(item)
     }
   })
@@ -182,39 +192,47 @@ const refreshOrders = () => loadOrders()
 async function startCooking(item) {
   try {
     await api.patch(`/kitchen/items/${item.id}/cooking`)
-    const idx = allItems.value.findIndex(i => i.id === item.id)
+    const idx = allItems.value.findIndex((i) => i.id === item.id)
     if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'cooking' }
     toast.success(`"${item.item_name}" en cours de cuisson`)
-  } catch { toast.error('Erreur lors du passage en cuisson') }
+  } catch {
+    toast.error('Erreur lors du passage en cuisson')
+  }
 }
 
 async function markReady(item) {
   try {
     await api.patch(`/kitchen/items/${item.id}/ready`)
-    const idx = allItems.value.findIndex(i => i.id === item.id)
+    const idx = allItems.value.findIndex((i) => i.id === item.id)
     if (idx !== -1) allItems.value[idx] = { ...allItems.value[idx], kitchen_status: 'ready' }
     toast.success(`"${item.item_name}" prêt à servir`)
-  } catch { toast.error('Erreur lors du passage en prêt') }
+  } catch {
+    toast.error('Erreur lors du passage en prêt')
+  }
 }
 
 async function serveItem(item) {
   try {
     await api.patch(`/kitchen/items/${item.id}/serve`)
-    allItems.value = allItems.value.filter(i => i.id !== item.id)
+    allItems.value = allItems.value.filter((i) => i.id !== item.id)
     toast.success(`"${item.item_name}" servi`)
-  } catch { toast.error('Erreur lors du service') }
+  } catch {
+    toast.error('Erreur lors du service')
+  }
 }
 
 async function confirmRupture(item) {
   const confirmed = window.confirm(
-    `Signaler rupture de stock pour "${item.item_name}" ?\n\nCela va retirer ce plat du menu jusqu'à réactivation.`
+    `Signaler rupture de stock pour "${item.item_name}" ?\n\nCela va retirer ce plat du menu jusqu'à réactivation.`,
   )
   if (!confirmed) return
   try {
     await api.patch(`/kitchen/items/${item.id}/rupture`)
-    allItems.value = allItems.value.filter(i => i.id !== item.id)
+    allItems.value = allItems.value.filter((i) => i.id !== item.id)
     toast.warning(`Rupture signalée : "${item.item_name}"`)
-  } catch { toast.error('Erreur lors de la rupture') }
+  } catch {
+    toast.error('Erreur lors de la rupture')
+  }
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -222,16 +240,22 @@ onMounted(() => {
   loadOrders()
   // Polling de secours toutes les 60 s (le WS est la source principale)
   refreshInterval = setInterval(loadOrders, 60000)
-
-  const restaurantId = authStore.user?.restaurant_id
-  if (restaurantId) {
-    subscribeKitchen(restaurantId, {
-      'item.status.changed': handleItemStatusChanged,
-      'order.received':      handleNewOrder,
-    })
-  }
 })
 
+// S'abonne dès que le restaurant de l'utilisateur est connu
+// (après un rechargement, /me peut répondre après l'affichage de la page)
+watch(
+  () => authStore.restaurantId,
+  (restaurantId) => {
+    if (!restaurantId) return
+    disconnectEcho()
+    subscribeKitchen(restaurantId, {
+      'item.status.changed': handleItemStatusChanged,
+      'order.received': handleNewOrder,
+    })
+  },
+  { immediate: true },
+)
 onBeforeUnmount(() => {
   if (refreshInterval) clearInterval(refreshInterval)
   disconnectEcho()
@@ -253,7 +277,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header h1 {
@@ -282,11 +306,18 @@ onBeforeUnmount(() => {
   margin-right: 4px;
 }
 
-.legend-dot.pending { background: #f56565; }
-.legend-dot.cooking { background: #ed8936; }
-.legend-dot.ready { background: #48bb78; }
+.legend-dot.pending {
+  background: #f56565;
+}
+.legend-dot.cooking {
+  background: #ed8936;
+}
+.legend-dot.ready {
+  background: #48bb78;
+}
 
-.refresh-btn, .back-btn {
+.refresh-btn,
+.back-btn {
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
@@ -315,7 +346,7 @@ onBeforeUnmount(() => {
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   height: calc(100vh - 140px);
@@ -329,9 +360,18 @@ onBeforeUnmount(() => {
   border-bottom: 2px solid;
 }
 
-.column-header.pending { border-color: #f56565; background: #fff5f5; }
-.column-header.cooking { border-color: #ed8936; background: #fffaf0; }
-.column-header.ready { border-color: #48bb78; background: #f0fff4; }
+.column-header.pending {
+  border-color: #f56565;
+  background: #fff5f5;
+}
+.column-header.cooking {
+  border-color: #ed8936;
+  background: #fffaf0;
+}
+.column-header.ready {
+  border-color: #48bb78;
+  background: #f0fff4;
+}
 
 .column-header h2 {
   font-size: 16px;
@@ -363,9 +403,15 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
 }
 
-.kitchen-card.pending { border-left: 4px solid #f56565; }
-.kitchen-card.cooking { border-left: 4px solid #ed8936; }
-.kitchen-card.ready { border-left: 4px solid #48bb78; }
+.kitchen-card.pending {
+  border-left: 4px solid #f56565;
+}
+.kitchen-card.cooking {
+  border-left: 4px solid #ed8936;
+}
+.kitchen-card.ready {
+  border-left: 4px solid #48bb78;
+}
 
 .card-header {
   display: flex;
@@ -434,14 +480,29 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
-.action-btn.start { background: #f56565; color: white; }
-.action-btn.start:hover { background: #e53e3e; }
+.action-btn.start {
+  background: #f56565;
+  color: white;
+}
+.action-btn.start:hover {
+  background: #e53e3e;
+}
 
-.action-btn.ready { background: #ed8936; color: white; }
-.action-btn.ready:hover { background: #dd6b20; }
+.action-btn.ready {
+  background: #ed8936;
+  color: white;
+}
+.action-btn.ready:hover {
+  background: #dd6b20;
+}
 
-.action-btn.serve { background: #48bb78; color: white; }
-.action-btn.serve:hover { background: #38a169; }
+.action-btn.serve {
+  background: #48bb78;
+  color: white;
+}
+.action-btn.serve:hover {
+  background: #38a169;
+}
 
 .action-btn.rupture {
   background: #fee2e2;
@@ -449,7 +510,9 @@ onBeforeUnmount(() => {
   border: 1px solid #fecaca;
   padding: 4px 8px;
 }
-.action-btn.rupture:hover { background: #fecaca; }
+.action-btn.rupture:hover {
+  background: #fecaca;
+}
 
 .empty-state {
   text-align: center;

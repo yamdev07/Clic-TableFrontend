@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia }           from 'pinia'
-import { useAuthStore }                          from '@/stores/auth'
+import { setActivePinia, createPinia } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 // ── Mock de l'API axios ────────────────────────────────────────────────────
 vi.mock('@/services/api', () => ({
   default: {
     post: vi.fn(),
-    get:  vi.fn(),
+    get: vi.fn(),
     interceptors: {
-      request:  { use: vi.fn() },
+      request: { use: vi.fn() },
       response: { use: vi.fn() },
     },
   },
@@ -39,15 +39,15 @@ describe('Auth Store', () => {
   })
 
   // ── Login ─────────────────────────────────────────────────────────────────
-  it('login réussi stocke le token et l\'utilisateur', async () => {
+  it("login réussi stocke le token et l'utilisateur", async () => {
     api.post.mockResolvedValueOnce({
       data: {
         token: 'jwt-token-123',
-        user:  { id: '1', name: 'Alice', email: 'alice@test.com', role: 'admin' },
+        user: { id: '1', name: 'Alice', email: 'alice@test.com', role: 'admin' },
       },
     })
 
-    const store  = useAuthStore()
+    const store = useAuthStore()
     const result = await store.login('alice@test.com', 'password')
 
     expect(result.success).toBe(true)
@@ -61,7 +61,7 @@ describe('Auth Store', () => {
       response: { data: { message: 'Identifiants incorrects' } },
     })
 
-    const store  = useAuthStore()
+    const store = useAuthStore()
     const result = await store.login('x@x.com', 'wrong')
 
     expect(result.success).toBe(false)
@@ -77,7 +77,7 @@ describe('Auth Store', () => {
 
     const store = useAuthStore()
     await store.login('bob@test.com', 'pass')
-    store.logout()
+    store.logout({ remote: false })
 
     expect(store.token).toBeNull()
     expect(store.user).toBeNull()
@@ -87,7 +87,7 @@ describe('Auth Store', () => {
   // ── RBAC — canAccess ──────────────────────────────────────────────────────
   it('admin a accès à toutes les routes', () => {
     const store = useAuthStore()
-    store.user  = { role: 'admin' }
+    store.user = { role: 'admin' }
 
     expect(store.canAccess('Dashboard')).toBe(true)
     expect(store.canAccess('Users')).toBe(true)
@@ -97,7 +97,7 @@ describe('Auth Store', () => {
 
   it('waiter a accès à son dashboard et commandes, pas aux users ni logs', () => {
     const store = useAuthStore()
-    store.user  = { role: 'waiter' }
+    store.user = { role: 'waiter' }
 
     expect(store.canAccess('WaiterDashboard')).toBe(true)
     expect(store.canAccess('NewOrder')).toBe(true)
@@ -109,7 +109,7 @@ describe('Auth Store', () => {
 
   it('cuisinier a accès cuisine et menu uniquement', () => {
     const store = useAuthStore()
-    store.user  = { role: 'kitchen' }
+    store.user = { role: 'kitchen' }
 
     expect(store.canAccess('Kitchen')).toBe(true)
     expect(store.canAccess('Menu')).toBe(true)
@@ -126,26 +126,65 @@ describe('Auth Store', () => {
   // ── homeRoute ─────────────────────────────────────────────────────────────
   it('homeRoute waiter pointe vers /waiter', () => {
     const store = useAuthStore()
-    store.user  = { role: 'waiter' }
+    store.user = { role: 'waiter' }
     expect(store.homeRoute).toBe('/waiter')
   })
 
   it('homeRoute kitchen pointe vers /kitchen', () => {
     const store = useAuthStore()
-    store.user  = { role: 'kitchen' }
+    store.user = { role: 'kitchen' }
     expect(store.homeRoute).toBe('/kitchen')
   })
 
   it('homeRoute admin pointe vers /', () => {
     const store = useAuthStore()
-    store.user  = { role: 'admin' }
+    store.user = { role: 'admin' }
     expect(store.homeRoute).toBe('/')
   })
 
   // ── Labels ────────────────────────────────────────────────────────────────
   it('userRoleLabel retourne le bon libellé', () => {
     const store = useAuthStore()
-    store.user  = { name: 'Test', role: 'waiter' }
+    store.user = { name: 'Test', role: 'waiter' }
     expect(store.userRoleLabel).toBe('Serveur')
+  })
+  it("restaurantName et restaurantId viennent de l'utilisateur", () => {
+    const store = useAuthStore()
+    store.user = { role: 'admin', restaurant_id: 'r1', restaurant: { id: 'r1', name: 'Chez Awa' } }
+    expect(store.restaurantName).toBe('Chez Awa')
+    expect(store.restaurantId).toBe('r1')
+  })
+
+  it('restaurantName est vide sans utilisateur', () => {
+    const store = useAuthStore()
+    expect(store.restaurantName).toBe('')
+  })
+
+  it('logout invalide le token côté serveur', async () => {
+    api.post.mockResolvedValueOnce({
+      data: { token: 'tok-A', user: { id: '1', name: 'Bob', role: 'waiter' } },
+    })
+    api.post.mockResolvedValueOnce({ data: {} })
+
+    const store = useAuthStore()
+    await store.login('bob@test.com', 'pass')
+    store.logout()
+
+    expect(api.post).toHaveBeenCalledWith(
+      '/logout',
+      {},
+      {
+        headers: { Authorization: 'Bearer tok-A' },
+      },
+    )
+  })
+
+  it("logout avec remote:false n'appelle pas le serveur", () => {
+    localStorage.setItem('token', 'tok-B')
+    const store = useAuthStore()
+    store.logout({ remote: false })
+
+    expect(api.post).not.toHaveBeenCalled()
+    expect(store.token).toBeNull()
   })
 })

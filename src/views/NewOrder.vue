@@ -52,7 +52,9 @@
               <p class="item-description">{{ item.description || 'Plat délicieux' }}</p>
               <div class="item-footer">
                 <span class="item-price">{{ formatMoney(item.price) }}</span>
-                <span v-if="item.preparation_time" class="prep-time">⏱️ {{ item.preparation_time }} min</span>
+                <span v-if="item.preparation_time" class="prep-time"
+                  >⏱️ {{ item.preparation_time }} min</span
+                >
               </div>
             </div>
             <button class="add-btn" :disabled="!item.is_available">+</button>
@@ -68,7 +70,9 @@
       <div class="cart-section">
         <div class="cart-header">
           <h2>🛒 Votre commande</h2>
-          <span class="cart-count">{{ cart.length }} article{{ cart.length !== 1 ? 's' : '' }}</span>
+          <span class="cart-count"
+            >{{ cart.length }} article{{ cart.length !== 1 ? 's' : '' }}</span
+          >
         </div>
 
         <div v-if="cart.length === 0" class="empty-cart">
@@ -97,12 +101,11 @@
               </div>
             </div>
             <div class="cart-item-notes">
-              <button
-                class="notes-toggle"
-                @click="item.showNotes = !item.showNotes"
-              >
+              <button class="notes-toggle" @click="item.showNotes = !item.showNotes">
                 <span>{{ item.special_instructions ? '📝' : '➕' }}</span>
-                <span>{{ item.special_instructions ? item.special_instructions : 'Ajouter une note...' }}</span>
+                <span>{{
+                  item.special_instructions ? item.special_instructions : 'Ajouter une note...'
+                }}</span>
               </button>
               <div v-if="item.showNotes" class="notes-input-wrap">
                 <input
@@ -136,9 +139,7 @@
             </div>
           </div>
 
-          <button @click="confirmOrder" class="checkout-btn">
-            ✅ Confirmer la commande
-          </button>
+          <button @click="confirmOrder" class="checkout-btn">✅ Confirmer la commande</button>
         </div>
       </div>
     </div>
@@ -164,11 +165,13 @@ export default {
 
     const filteredItems = computed(() => {
       if (!selectedCategory.value) return []
-      return allItems.value.filter(item => item.category_id === selectedCategory.value && item.is_available)
+      return allItems.value.filter(
+        (item) => item.category_id === selectedCategory.value && item.is_available,
+      )
     })
 
     const subtotal = computed(() => {
-      return cart.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      return cart.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
     })
 
     const tax = computed(() => {
@@ -189,11 +192,11 @@ export default {
 
     const getCategoryIcon = (categoryName) => {
       const icons = {
-        'Entrées': '🥗',
+        Entrées: '🥗',
         'Plats Principaux': '🍲',
-        'Grillades': '🥩',
-        'Desserts': '🍰',
-        'Boissons': '🥤'
+        Grillades: '🥩',
+        Desserts: '🍰',
+        Boissons: '🥤',
       }
       return icons[categoryName] || '🍽️'
     }
@@ -222,7 +225,7 @@ export default {
     }
 
     const addToCart = (item) => {
-      const existing = cart.value.find(i => i.id === item.id && !i.special_instructions)
+      const existing = cart.value.find((i) => i.id === item.id && !i.special_instructions)
       if (existing) {
         existing.quantity++
       } else {
@@ -254,52 +257,51 @@ export default {
         })
         return
       }
-      
+
       try {
         console.log('📝 Création commande pour table:', table.value.id)
-        
+
         const orderResponse = await api.post('/orders', { table_id: table.value.id })
         console.log('📦 Réponse brute:', orderResponse.data)
-        
+
         const orderId = orderResponse.data.data?.id || orderResponse.data.id
         console.log('✅ Order ID récupéré:', orderId)
-        
+
         if (!orderId) {
-          throw new Error('Impossible de récupérer l\'ID de la commande')
+          throw new Error("Impossible de récupérer l'ID de la commande")
         }
-        
+
         await Promise.all(
-          cart.value.map(item =>
+          cart.value.map((item) =>
             api.post(`/orders/${orderId}/items`, {
               menu_item_id: item.id,
               quantity: item.quantity,
               special_instructions: item.special_instructions || null,
-            })
-          )
+            }),
+          ),
         )
-        
+
         console.log('👨‍🍳 Envoi en cuisine...')
         await api.post(`/orders/${orderId}/send-to-kitchen`)
-        
+
         console.log('🎉 Commande terminée !')
-        
+
         toast.success('Commande créée avec succès !', {
           description: `Table ${table.value.number} - Total ${formatMoney(total.value)} - ${cart.value.length} article(s)`,
           duration: 4000,
           action: {
             label: 'Voir les commandes',
-            onClick: () => router.push('/orders')
-          }
+            onClick: () => router.push('/orders'),
+          },
         })
-        
+
         setTimeout(() => {
           router.push('/tables')
         }, 1500)
-        
       } catch (error) {
         console.error('❌ ERREUR:', error)
         console.error('📋 Détails:', error.response?.data)
-        
+
         toast.error('Erreur lors de la création', {
           description: error.response?.data?.message || error.message,
           duration: 4000,
@@ -311,7 +313,17 @@ export default {
       const tableId = router.currentRoute.value.params.tableId
       try {
         const tables = await api.get('/tables')
-        table.value = tables.data.find(t => t.id === tableId)
+        table.value = tables.data.find((t) => t.id === tableId)
+
+        if (!table.value) {
+          toast.error('Table introuvable', {
+            description: "Cette table n'existe pas dans votre restaurant.",
+            duration: 4000,
+          })
+          router.replace('/tables')
+          return
+        }
+
         await loadMenu()
       } catch (error) {
         console.error('Erreur chargement:', error)
@@ -336,14 +348,13 @@ export default {
       incrementQuantity,
       decrementQuantity,
       removeItem,
-      confirmOrder
+      confirmOrder,
     }
-  }
+  },
 }
 </script>
 
 <style scoped>
-
 .new-order-page {
   min-height: 100vh;
   background: #f4f4f6;
@@ -373,7 +384,7 @@ export default {
   padding: 8px 20px;
   border-radius: 40px;
   width: fit-content;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .table-icon {
@@ -412,7 +423,7 @@ export default {
 
 .confirm-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(16,185,129,0.3);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
 }
 
 .confirm-btn:disabled {
@@ -435,7 +446,7 @@ export default {
   flex: 2;
   background: white;
   border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -501,7 +512,7 @@ export default {
 .menu-item:hover:not(.unavailable) {
   transform: translateY(-2px);
   border-color: #7c3aed;
-  box-shadow: 0 8px 20px rgba(124,58,237,0.1);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.1);
 }
 
 .menu-item.unavailable {
@@ -569,7 +580,7 @@ export default {
   flex: 1;
   background: white;
   border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -686,7 +697,7 @@ export default {
 
 .notes-input:focus {
   border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
 .qty-btn {
@@ -775,22 +786,25 @@ export default {
 
 .checkout-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(16,185,129,0.3);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
 }
 
-.empty-cart, .empty-items {
+.empty-cart,
+.empty-items {
   text-align: center;
   padding: 60px 20px;
   color: #9ca3af;
 }
 
-.empty-cart span, .empty-items span {
+.empty-cart span,
+.empty-items span {
   font-size: 48px;
   display: block;
   margin-bottom: 16px;
 }
 
-.empty-cart p, .empty-items p {
+.empty-cart p,
+.empty-items p {
   margin: 0;
   font-size: 16px;
 }

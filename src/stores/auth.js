@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
+import { resetEcho } from '@/composables/useEcho'
 
 const ROLE_LABELS = {
   admin: 'Administrateur',
@@ -10,16 +11,26 @@ const ROLE_LABELS = {
 
 // Which routes each role can access (by route name)
 const ROLE_PERMISSIONS = {
-  admin:   ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments', 'Users', 'Logs'],
+  admin: [
+    'Dashboard',
+    'Tables',
+    'Menu',
+    'Orders',
+    'NewOrder',
+    'Kitchen',
+    'Payments',
+    'Users',
+    'Logs',
+  ],
   manager: ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments'],
-  waiter:  ['WaiterDashboard', 'Tables', 'Menu', 'Orders', 'NewOrder'],
+  waiter: ['WaiterDashboard', 'Tables', 'Menu', 'Orders', 'NewOrder'],
   kitchen: ['Kitchen', 'Menu'],
 }
 
 const ROLE_HOME = {
-  admin:   '/',
+  admin: '/',
   manager: '/',
-  waiter:  '/waiter',
+  waiter: '/waiter',
   kitchen: '/kitchen',
 }
 
@@ -40,6 +51,8 @@ export const useAuthStore = defineStore('auth', {
     userRole: (state) => state.user?.role || '',
     userRoleLabel: (state) => ROLE_LABELS[state.user?.role] || state.user?.role || '',
     homeRoute: (state) => ROLE_HOME[state.user?.role] || '/',
+    restaurantId: (state) => state.user?.restaurant_id || '',
+    restaurantName: (state) => state.user?.restaurant?.name || '',
     canAccess: (state) => (routeName) => {
       if (!state.user?.role) return false
       const allowed = ROLE_PERMISSIONS[state.user.role] || []
@@ -66,10 +79,21 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    logout() {
+    logout({ remote = true } = {}) {
+      const token = this.token
+
+      // 1. Nettoyage local immédiat
       this.token = null
       this.user = null
       localStorage.removeItem('token')
+
+      // 2. Fermer la connexion temps réel de l'ancien utilisateur
+      resetEcho()
+
+      // 3. Invalider le token côté serveur, sans bloquer la déconnexion
+      if (remote && token) {
+        api.post('/logout', {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
+      }
     },
 
     async fetchMe() {
@@ -78,7 +102,7 @@ export const useAuthStore = defineStore('auth', {
         this.user = response.data
         return response.data
       } catch (error) {
-        this.logout()
+        this.logout({ remote: false }) // token déjà invalide : inutile d'appeler le serveur
         return null
       }
     },

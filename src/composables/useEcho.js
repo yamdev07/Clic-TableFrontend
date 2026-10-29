@@ -23,17 +23,17 @@ async function getEcho() {
 
     echoInstance = new Echo({
       broadcaster: 'reverb',
-      key:         import.meta.env.VITE_REVERB_APP_KEY  ?? 'clicettable-key',
-      wsHost:      import.meta.env.VITE_REVERB_HOST     ?? 'localhost',
-      wsPort:      Number(import.meta.env.VITE_REVERB_PORT  ?? 8080),
-      wssPort:     Number(import.meta.env.VITE_REVERB_PORT  ?? 8080),
-      forceTLS:   (import.meta.env.VITE_REVERB_SCHEME   ?? 'http') === 'https',
+      key: import.meta.env.VITE_REVERB_APP_KEY ?? 'clicettable-key',
+      wsHost: import.meta.env.VITE_REVERB_HOST ?? 'localhost',
+      wsPort: Number(import.meta.env.VITE_REVERB_PORT ?? 8080),
+      wssPort: Number(import.meta.env.VITE_REVERB_PORT ?? 8080),
+      forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
       enabledTransports: ['ws', 'wss'],
       // Désactiver les retries automatiques de Pusher
-      activityTimeout:  30000,
-      pongTimeout:      10000,
-      authEndpoint: (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api')
-        + '/broadcasting/auth',
+      activityTimeout: 30000,
+      pongTimeout: 10000,
+      authEndpoint:
+        (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api') + '/broadcasting/auth',
       auth: {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
@@ -44,7 +44,9 @@ async function getEcho() {
     // Si Reverb est indisponible : log propre, pas de spam
     const pusher = echoInstance.connector.pusher
     pusher.connection.bind('unavailable', () => {
-      console.warn('[WebSocket] Reverb indisponible — polling actif. Démarrez : php artisan reverb:start')
+      console.warn(
+        '[WebSocket] Reverb indisponible — polling actif. Démarrez : php artisan reverb:start',
+      )
       pusher.disconnect()
       echoInstance = null
     })
@@ -58,10 +60,20 @@ async function getEcho() {
   } catch (err) {
     console.warn(
       '[useEcho] Laravel Echo non disponible — polling actif comme fallback.\n' +
-      'Exécutez : npm install',
+        'Exécutez : npm install',
       err.message,
     )
     return null
+  }
+}
+export function resetEcho() {
+  if (echoInstance) {
+    try {
+      echoInstance.disconnect()
+    } catch {
+      // connexion déjà fermée
+    }
+    echoInstance = null
   }
 }
 
@@ -96,7 +108,7 @@ export function useEcho() {
   }
 
   function disconnect() {
-    subscriptions.forEach(ch => ch.unsubscribe?.())
+    subscriptions.forEach((ch) => ch.unsubscribe?.())
     subscriptions.length = 0
     connected.value = false
   }
