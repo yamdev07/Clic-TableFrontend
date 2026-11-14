@@ -116,6 +116,16 @@
         </div>
         <span class="nav-label">Utilisateurs</span>
       </router-link>
+
+      <router-link v-if="authStore.canAccess('RestaurantSettings')" to="/settings" class="nav-item">
+        <div class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path d="M3 21h18M5 21V8l7-5 7 5v13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 21v-6h4v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="nav-label">Mon restaurant</span>
+      </router-link>
     </nav>
 
     <!-- Spacer -->

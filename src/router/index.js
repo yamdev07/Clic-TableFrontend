@@ -76,6 +76,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/settings',
+    name: 'RestaurantSettings',
+    component: () => import('@/views/RestaurantSettings.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/logs',
     name: 'Logs',
     component: () => import('@/views/Logs.vue'),

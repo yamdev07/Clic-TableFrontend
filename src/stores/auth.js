@@ -13,7 +13,7 @@ const ROLE_LABELS = {
 // Which routes each role can access (by route name)
 const ROLE_PERMISSIONS = {
   super_admin: ['Platform'],
-  admin:   ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments', 'Users', 'Logs'],
+  admin:   ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments', 'Users', 'Logs', 'RestaurantSettings'],
   manager: ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments'],
   waiter:  ['WaiterDashboard', 'Tables', 'Menu', 'Orders', 'NewOrder'],
   kitchen: ['Kitchen', 'Menu'],

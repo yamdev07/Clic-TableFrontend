@@ -174,6 +174,16 @@ describe('Auth Store', () => {
     expect(store.canAccess('Users')).toBe(false)
   })
 
+  it('seul l\'admin modifie la fiche du restaurant', () => {
+    const store = useAuthStore()
+    store.user  = { role: 'admin' }
+    expect(store.canAccess('RestaurantSettings')).toBe(true)
+    for (const role of ['manager', 'waiter', 'kitchen', 'cashier']) {
+      store.user = { role }
+      expect(store.canAccess('RestaurantSettings')).toBe(false)
+    }
+  })
+
   it('register réussi connecte le nouvel administrateur', async () => {
     api.post.mockResolvedValueOnce({
       data: { token: 'new-tok', user: { id: '9', name: 'Fatou', role: 'admin', restaurant_id: 'r1' } },

@@ -170,6 +170,7 @@ const ROLE_LABELS = {
   manager: 'Gérant',
   waiter:  'Serveur',
   kitchen: 'Cuisinier',
+  cashier: 'Caissier',
 }
 
 const roles = [
@@ -177,6 +178,7 @@ const roles = [
   { value: 'manager', label: 'Gérant',          icon: '📊', desc: 'Gestion & paiements' },
   { value: 'waiter',  label: 'Serveur',          icon: '🍽️', desc: 'Tables & commandes' },
   { value: 'kitchen', label: 'Cuisinier',        icon: '👨‍🍳', desc: 'Cuisine uniquement' },
+  { value: 'cashier', label: 'Caissier',         icon: '💰', desc: 'Encaissements' },
 ]
 
 const users = ref([])
@@ -397,6 +399,7 @@ onMounted(loadUsers)
 .user-avatar-sm.role-kitchen { background: linear-gradient(135deg, #f59e0b, #d97706); }
 .user-avatar-sm.role-waiter  { background: linear-gradient(135deg, #10b981, #059669); }
 .user-avatar-sm.role-manager { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.user-avatar-sm.role-cashier { background: linear-gradient(135deg, #ec4899, #db2777); }
 
 .user-name-cell { font-weight: 500; color: #0f0f12; }
 .you-badge {
@@ -423,6 +426,7 @@ onMounted(loadUsers)
 .role-pill.manager { background: rgba(59,130,246,0.1);  color: #2563eb; }
 .role-pill.waiter  { background: rgba(16,185,129,0.1);  color: #059669; }
 .role-pill.kitchen { background: rgba(245,158,11,0.1);  color: #d97706; }
+.role-pill.cashier { background: rgba(236,72,153,0.1);  color: #db2777; }
 
 .status-dot {
   display: inline-flex;
@@ -549,6 +553,7 @@ onMounted(loadUsers)
 .role-option.active.role-kitchen { border-color: #f59e0b; background: rgba(245,158,11,0.06); }
 .role-option.active.role-waiter  { border-color: #10b981; background: rgba(16,185,129,0.06); }
 .role-option.active.role-manager { border-color: #3b82f6; background: rgba(59,130,246,0.06); }
+.role-option.active.role-cashier { border-color: #ec4899; background: rgba(236,72,153,0.06); }
 .role-opt-icon { font-size: 18px; line-height: 1; }
 .role-opt-label { font-size: 12.5px; font-weight: 600; color: #0f0f12; }
 .role-opt-desc { font-size: 11px; color: #9b9bab; }

@@ -368,9 +368,9 @@
 
           <div class="invoice-body" ref="invoiceContent">
             <div class="restaurant-header">
-              <h3>Clic&Table Restaurant</h3>
-              <p>Cotonou, Bénin</p>
-              <p>Tel: +2999000000</p>
+              <h3>{{ restaurant.name }}</h3>
+              <p v-if="restaurant.address">{{ restaurant.address }}</p>
+              <p v-if="restaurant.phone">Tél : {{ restaurant.phone }}</p>
             </div>
 
             <div class="invoice-details">
@@ -651,6 +651,11 @@ const printInvoice = () => {
   printWindow.close()
 }
 
+// Échappe les textes saisis par l'utilisateur avant de les injecter dans le HTML de la facture
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+))
+
 const downloadInvoice = () => {
   const inv = invoiceData.value
   if (!inv) return
@@ -661,7 +666,7 @@ const downloadInvoice = () => {
 
   const rows = (inv.items || []).map(item => `
     <tr>
-      <td>${item.item_name || ''}</td>
+      <td>${esc(item.item_name)}</td>
       <td style="text-align:center">${item.quantity}</td>
       <td style="text-align:right">${formatM(item.unit_price)}</td>
       <td style="text-align:right">${formatM(item.total_price)}</td>
@@ -695,8 +700,8 @@ const downloadInvoice = () => {
 </head>
 <body>
   <div class="header">
-    <h2>Clic&amp;Table</h2>
-    <p>Dakar, Sénégal &nbsp;|&nbsp; Tel: +221 78 123 45 67</p>
+    <h2>${esc(restaurant.value.name)}</h2>
+    <p>${[restaurant.value.address, restaurant.value.phone && `Tél : ${restaurant.value.phone}`].filter(Boolean).map(esc).join(' &nbsp;|&nbsp; ')}</p>
   </div>
   <div class="meta">
     <div>
@@ -749,8 +754,20 @@ const formatDate = (date) => {
   })
 }
 
+// En-tête des factures : fiche du restaurant (modifiable dans « Mon restaurant »)
+const restaurant = ref({ name: '', address: '', phone: '' })
+
+async function loadRestaurant() {
+  try {
+    restaurant.value = (await api.get('/restaurant')).data
+  } catch {
+    // erreur déjà notifiée par l'intercepteur
+  }
+}
+
 onMounted(() => {
   loadData()
+  loadRestaurant()
   setInterval(loadData, 30000)
 })
 </script>
