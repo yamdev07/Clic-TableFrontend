@@ -7,6 +7,7 @@
  */
 
 import { ref } from 'vue'
+import { API_BASE_URL, REVERB } from '@/config'
 
 let echoInstance = null
 
@@ -23,17 +24,16 @@ async function getEcho() {
 
     echoInstance = new Echo({
       broadcaster: 'reverb',
-      key:         import.meta.env.VITE_REVERB_APP_KEY  ?? 'clicettable-key',
-      wsHost:      import.meta.env.VITE_REVERB_HOST     ?? 'localhost',
-      wsPort:      Number(import.meta.env.VITE_REVERB_PORT  ?? 8080),
-      wssPort:     Number(import.meta.env.VITE_REVERB_PORT  ?? 8080),
-      forceTLS:   (import.meta.env.VITE_REVERB_SCHEME   ?? 'http') === 'https',
+      key:         REVERB.key,
+      wsHost:      REVERB.host,
+      wsPort:      REVERB.port,
+      wssPort:     REVERB.port,
+      forceTLS:    REVERB.scheme === 'https',
       enabledTransports: ['ws', 'wss'],
       // Désactiver les retries automatiques de Pusher
       activityTimeout:  30000,
       pongTimeout:      10000,
-      authEndpoint: (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api')
-        + '/broadcasting/auth',
+      authEndpoint: `${API_BASE_URL}/broadcasting/auth`,
       auth: {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,

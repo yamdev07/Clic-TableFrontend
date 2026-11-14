@@ -2,25 +2,31 @@ import { defineStore } from 'pinia'
 import api from '@/services/api'
 
 const ROLE_LABELS = {
+  super_admin: 'Plateforme',
   admin: 'Administrateur',
   manager: 'Gérant',
   waiter: 'Serveur',
   kitchen: 'Cuisinier',
+  cashier: 'Caissier',
 }
 
 // Which routes each role can access (by route name)
 const ROLE_PERMISSIONS = {
-  admin:   ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments', 'Users', 'Logs'],
+  super_admin: ['Platform'],
+  admin:   ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments', 'Users', 'Logs', 'RestaurantSettings'],
   manager: ['Dashboard', 'Tables', 'Menu', 'Orders', 'NewOrder', 'Kitchen', 'Payments'],
   waiter:  ['WaiterDashboard', 'Tables', 'Menu', 'Orders', 'NewOrder'],
   kitchen: ['Kitchen', 'Menu'],
+  cashier: ['Payments', 'Orders'],
 }
 
 const ROLE_HOME = {
+  super_admin: '/platform',
   admin:   '/',
   manager: '/',
   waiter:  '/waiter',
   kitchen: '/kitchen',
+  cashier: '/payments',
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -32,6 +38,7 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => !!state.token,
+    isSuperAdmin: (state) => state.user?.role === 'super_admin',
     isAdmin: (state) => state.user?.role === 'admin',
     isWaiter: (state) => state.user?.role === 'waiter',
     isKitchen: (state) => state.user?.role === 'kitchen',
@@ -60,6 +67,26 @@ export const useAuthStore = defineStore('auth', {
         return {
           success: false,
           message: error.response?.data?.message || 'Erreur de connexion',
+        }
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // Inscription SaaS : crée le restaurant + son administrateur, puis connecte
+    async register(payload) {
+      this.loading = true
+      try {
+        const response = await api.post('/register', payload)
+        this.token = response.data.token
+        this.user = response.data.user
+        localStorage.setItem('token', response.data.token)
+        return { success: true }
+      } catch (error) {
+        return {
+          success: false,
+          message: error.response?.data?.message || "Erreur lors de l'inscription",
+          errors: error.response?.data?.errors || {},
         }
       } finally {
         this.loading = false

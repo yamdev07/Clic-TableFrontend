@@ -1,8 +1,9 @@
 import axios from 'axios'
-import { toast } from 'vue-sonner'
+import { API_BASE_URL } from '@/config'
+import { toast } from '@/composables/useNotif'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -25,6 +26,14 @@ api.interceptors.response.use(
       localStorage.removeItem('token')
       toast.error('Session expirée', { description: 'Veuillez vous reconnecter.' })
       window.location.href = '/login'
+      return Promise.reject(error)
+    }
+
+    // 403 account_inactive — compte désactivé, restaurant suspendu ou essai expiré
+    if (status === 403 && data?.code === 'account_inactive' && window.location.pathname !== '/login') {
+      localStorage.removeItem('token')
+      toast.error('Accès suspendu', { description: data.message, duration: 6000 })
+      setTimeout(() => { window.location.href = '/login' }, 1500)
       return Promise.reject(error)
     }
 

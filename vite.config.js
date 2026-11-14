@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -10,6 +11,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+
+  // ── Accessible depuis les autres appareils du réseau local (tablettes, téléphones)
+  server: { host: true, port: 5173 },
+  preview: { host: true, port: 5173 },
 
   // ── Pre-bundle des dépendances CJS ────────────────────────────────────────
   optimizeDeps: {
@@ -25,11 +30,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Sépare les vendors en chunks stables (meilleur cache navigateur)
-        manualChunks: {
-          'vendor-vue':    ['vue', 'vue-router', 'pinia'],
-          'vendor-ui':     ['vue-sonner'],
-          'vendor-echo':   ['laravel-echo', 'pusher-js'],
-          'vendor-utils':  ['axios', '@vueuse/core'],
+        // (Rolldown / Vite 8 n'accepte qu'une fonction pour manualChunks)
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (/[\\/]node_modules[\\/](vue|@vue|vue-router|pinia)[\\/]/.test(id)) return 'vendor-vue'
+          if (/[\\/]node_modules[\\/]vue-sonner[\\/]/.test(id)) return 'vendor-ui'
+          if (/[\\/]node_modules[\\/](laravel-echo|pusher-js)[\\/]/.test(id)) return 'vendor-echo'
+          if (/[\\/]node_modules[\\/](axios|@vueuse)[\\/]/.test(id)) return 'vendor-utils'
         },
       },
     },

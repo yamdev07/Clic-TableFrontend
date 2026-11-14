@@ -457,8 +457,8 @@ onMounted(() => {
   loadData()
   tickClock()
   clockTimer   = setInterval(tickClock, 1000)
-  // Polling de secours toutes les 60 s (le WS est la source principale)
-  refreshTimer = setInterval(loadData, 60000)
+  // Polling de secours toutes les 15 s (le WS est la source principale)
+  refreshTimer = setInterval(loadData, 15000)
 
   const restaurantId = authStore.user?.restaurant_id
   if (restaurantId) {

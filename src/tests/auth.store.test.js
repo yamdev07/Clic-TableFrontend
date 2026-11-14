@@ -148,4 +148,67 @@ describe('Auth Store', () => {
     store.user  = { name: 'Test', role: 'waiter' }
     expect(store.userRoleLabel).toBe('Serveur')
   })
+
+  // ── SaaS : super admin, caissier, inscription ─────────────────────────────
+  it('super_admin n\'accède qu\'à la plateforme', () => {
+    const store = useAuthStore()
+    store.user  = { role: 'super_admin' }
+    expect(store.isSuperAdmin).toBe(true)
+    expect(store.homeRoute).toBe('/platform')
+    expect(store.canAccess('Platform')).toBe(true)
+    expect(store.canAccess('Dashboard')).toBe(false)
+    expect(store.canAccess('Tables')).toBe(false)
+  })
+
+  it('admin de restaurant n\'accède pas à la plateforme', () => {
+    const store = useAuthStore()
+    store.user  = { role: 'admin' }
+    expect(store.canAccess('Platform')).toBe(false)
+  })
+
+  it('caissier accède aux paiements', () => {
+    const store = useAuthStore()
+    store.user  = { role: 'cashier' }
+    expect(store.homeRoute).toBe('/payments')
+    expect(store.canAccess('Payments')).toBe(true)
+    expect(store.canAccess('Users')).toBe(false)
+  })
+
+  it('seul l\'admin modifie la fiche du restaurant', () => {
+    const store = useAuthStore()
+    store.user  = { role: 'admin' }
+    expect(store.canAccess('RestaurantSettings')).toBe(true)
+    for (const role of ['manager', 'waiter', 'kitchen', 'cashier']) {
+      store.user = { role }
+      expect(store.canAccess('RestaurantSettings')).toBe(false)
+    }
+  })
+
+  it('register réussi connecte le nouvel administrateur', async () => {
+    api.post.mockResolvedValueOnce({
+      data: { token: 'new-tok', user: { id: '9', name: 'Fatou', role: 'admin', restaurant_id: 'r1' } },
+    })
+
+    const store  = useAuthStore()
+    const result = await store.register({ restaurant_name: 'Chez Fatou' })
+
+    expect(api.post).toHaveBeenCalledWith('/register', { restaurant_name: 'Chez Fatou' })
+    expect(result.success).toBe(true)
+    expect(store.isAuthenticated).toBe(true)
+    expect(store.homeRoute).toBe('/')
+    expect(localStorage.getItem('token')).toBe('new-tok')
+  })
+
+  it('register échoué renvoie les erreurs de validation', async () => {
+    api.post.mockRejectedValueOnce({
+      response: { data: { message: 'Invalide', errors: { email: ['Déjà utilisé'] } } },
+    })
+
+    const store  = useAuthStore()
+    const result = await store.register({})
+
+    expect(result.success).toBe(false)
+    expect(result.errors.email[0]).toBe('Déjà utilisé')
+    expect(store.token).toBeNull()
+  })
 })

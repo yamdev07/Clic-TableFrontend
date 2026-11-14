@@ -245,7 +245,7 @@ const toggleAvailability = async (item) => {
     await api.patch(`/menu/${item.id}/availability`, { is_available: newState })
     toast.success(newState ? `"${item.name}" disponible` : `"${item.name}" indisponible`)
     await loadData()
-  } catch (error) {
+  } catch {
     toast.error('Impossible de changer la disponibilité')
   }
 }

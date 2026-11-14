@@ -27,7 +27,10 @@ const route = useRoute()
 const authStore = useAuthStore()
 const navLoader = useNavLoader()
 
-const showSidebar = computed(() => route.path !== '/login')
+// Pas de sidebar restaurant sur les pages publiques ni sur l'espace plateforme
+const showSidebar = computed(
+  () => !['/login', '/register'].includes(route.path) && !authStore.isSuperAdmin,
+)
 
 if (authStore.token && !authStore.user) {
   authStore.fetchMe()

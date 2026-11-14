@@ -117,7 +117,6 @@ import api from '@/services/api'
 const logs = ref([])
 const loading = ref(false)
 const pagination = ref({ current_page: 1, last_page: 1, total: 0 })
-const currentPage = ref(1)
 
 const filters = ref({
   entity_type: '',
