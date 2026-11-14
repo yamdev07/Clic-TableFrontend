@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL } from '@/config'
-import { toast } from 'vue-sonner'
+import { toast } from '@/composables/useNotif'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
