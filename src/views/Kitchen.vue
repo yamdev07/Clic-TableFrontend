@@ -165,8 +165,9 @@ const formatTime = (date) => {
   return new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Squelette uniquement au premier chargement (pas de clignotement au polling)
 async function loadOrders() {
-  loading.value = true
+  if (!allItems.value.length) loading.value = true
   try {
     const response = await api.get('/kitchen/pending')
     allItems.value = response.data
@@ -220,8 +221,8 @@ async function confirmRupture(item) {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
   loadOrders()
-  // Polling de secours toutes les 60 s (le WS est la source principale)
-  refreshInterval = setInterval(loadOrders, 60000)
+  // Polling de secours toutes les 15 s (le WS est la source principale)
+  refreshInterval = setInterval(loadOrders, 15000)
 
   const restaurantId = authStore.user?.restaurant_id
   if (restaurantId) {

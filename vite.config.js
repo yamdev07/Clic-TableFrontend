@@ -12,6 +12,10 @@ export default defineConfig({
     },
   },
 
+  // ── Accessible depuis les autres appareils du réseau local (tablettes, téléphones)
+  server: { host: true, port: 5173 },
+  preview: { host: true, port: 5173 },
+
   // ── Pre-bundle des dépendances CJS ────────────────────────────────────────
   optimizeDeps: {
     include: ['laravel-echo', 'pusher-js'],
